@@ -1,0 +1,145 @@
+@model IList<Nop.Web.Models.Contract.ContractConditionCheckModel>
+@*[Mahjar handover] the documented condition of each item — before signing, at delivery, at a rental return —
+    grouped by checkpoint. Reuses the item-status ("حالة القطعة") look of the product page, so a buyer recognises it;
+    each check gets its own lightbox gallery.*@
+
+@using Nop.Core.Domain.Media
+@inject MediaSettings mediaSettings
+
+@if (Model?.Any() == true)
+{
+    <link rel="stylesheet" href="~/lib_npm/magnific-popup/magnific-popup.css" />
+    <script asp-exclude-from-bundle="true" src="~/lib_npm/magnific-popup/jquery.magnific-popup.min.js" asp-location="Footer"></script>
+
+    <style>
+        .contract-condition .contract-condition-stage { font-weight: bold; font-size: 16px; margin: 18px 0 8px; }
+        .contract-condition .contract-condition-check { margin-bottom: 16px; }
+        .contract-condition .contract-condition-damage { margin: 10px 0; padding: 8px 12px; background: #fbeaea; border-radius: 4px; }
+        .contract-condition .contract-condition-money { margin: 8px 0 0; }
+    </style>
+
+    <div class="contract-condition">
+        @{
+            string currentStage = null;
+        }
+        @foreach (var check in Model)
+        {
+            if (!string.Equals(check.CheckTypeKey, currentStage, StringComparison.Ordinal))
+            {
+                currentStage = check.CheckTypeKey;
+                <div class="contract-condition-stage">@check.CheckType</div>
+            }
+
+            var stripId = $"contract-condition-photos-{check.Id}";
+            <div class="item-status-box contract-condition-check">
+                <div class="item-status-header">
+                    <div class="item-status-heading">
+                        <strong class="item-status-title">@check.ProductName</strong>
+                        <span class="item-status-inspected">
+                            @T("mahjar.contracts.condition.recordedon"): <span class="item-status-inspected-date">@check.RecordedOn</span>
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(check.GradeText))
+                    {
+                        <div class="item-status-grade">
+                            <span class="item-status-grade-label">@T("mahjar.itemstatus.grade")</span>
+                            <span class="item-status-grade-pill">@check.GradeText</span>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(check.Notes))
+                {
+                    <div class="item-status-section item-status-summary-section">
+                        <p class="item-status-summary">@check.Notes</p>
+                    </div>
+                }
+
+                @if (check.Photos.Any())
+                {
+                    <div class="item-status-section item-status-photos-section">
+                        <div class="item-status-section-title">@T("mahjar.itemstatus.photos")</div>
+                        <div class="item-status-photo-strip" id="@stripId">
+                            @foreach (var photo in check.Photos)
+                            {
+                                <figure class="item-status-photo">
+                                    <a class="item-status-photo-link contract-condition-photo-link" href="@photo.FullSizeImageUrl" title="@photo.Caption">
+                                        <img src="@photo.ImageUrl" alt="@check.ProductName" title="@photo.Caption" loading="lazy" />
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(photo.Caption))
+                                    {
+                                        <figcaption class="item-status-photo-caption">@photo.Caption</figcaption>
+                                    }
+                                </figure>
+                            }
+                        </div>
+                    </div>
+
+                    <script asp-location="Footer">
+                        $(function() {
+                            $('#@stripId').magnificPopup(
+                                {
+                                    type: 'image',
+                                    delegate: 'a.contract-condition-photo-link',
+                                    removalDelay: 300,
+                                    image: {
+                                        //[Mahjar handover] a caption is staff / partner text: magnific 1.1 would inject the raw title as HTML
+                                        titleSrc: function (item) { return $('<div/>').text(item.el.attr('title') || '').html(); }
+                                    },
+                                    gallery: {
+                                        enabled: true,
+                                        navigateByImgClick: true,
+                                        preload: [0, 1],
+                                        tPrev: '@T("Media.MagnificPopup.Previous")',
+                                        tNext: '@T("Media.MagnificPopup.Next")',
+                                        tCounter: '@T("Media.MagnificPopup.Counter")'
+                                    },
+                                    tClose: '@T("Media.MagnificPopup.Close")',
+                                    tLoading: '@T("Media.MagnificPopup.Loading")'
+                                });
+                        });
+                    </script>
+                }
+
+                @if (!string.IsNullOrEmpty(check.VideoUrl))
+                {
+                    <div class="item-status-section item-status-video-section">
+                        <div class="item-status-section-title">@T("mahjar.itemstatus.video")</div>
+                        @if (check.VideoIsFile)
+                        {
+                            <div class="item-status-video-frame">
+                                <video class="item-status-video-player" src="@check.VideoUrl" controls preload="metadata" playsinline>
+                                    @T("mahjar.itemstatus.videounsupported")
+                                </video>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="item-status-video-frame item-status-video-frame--embed">
+                                <iframe class="item-status-video-embed" src="@check.VideoUrl" title="@T("mahjar.itemstatus.video")" frameborder="0" allow="@mediaSettings.VideoIframeAllow" allowfullscreen></iframe>
+                            </div>
+                            <a class="item-status-video-link" href="@check.VideoUrl" target="_blank" rel="noopener noreferrer">@T("mahjar.itemstatus.watchvideo")</a>
+                        }
+                    </div>
+                }
+
+                @if (check.HasDamage)
+                {
+                    <div class="contract-condition-damage">
+                        <strong>@T("mahjar.contracts.condition.damage")@(string.IsNullOrEmpty(check.DamageSeverityText) ? "" : $" ({check.DamageSeverityText})"):</strong>
+                        @check.DamageDescription
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(check.DeductionText))
+                {
+                    <div class="contract-condition-money">@T("mahjar.contracts.condition.deduction"): <strong>@check.DeductionText</strong></div>
+                }
+                @if (!string.IsNullOrEmpty(check.RefundText))
+                {
+                    <div class="contract-condition-money">@T("mahjar.contracts.condition.refund"): <strong>@check.RefundText</strong></div>
+                }
+            </div>
+        }
+    </div>
+}

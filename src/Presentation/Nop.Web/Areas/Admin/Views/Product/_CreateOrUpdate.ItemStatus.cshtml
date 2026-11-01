@@ -1,0 +1,26 @@
+@model ProductModel
+
+@*[Mahjar item-status] The condition report editor — the only place a partner or an admin builds one.
+    Everything here lives inside #product-form, so the Info tab posts with the ordinary product Save button
+    while the photos, the notes and the video each use their own ajax endpoint.*@
+<div class="card-body">
+    @if (Model.Id > 0)
+    {
+        @*[Mahjar item-status] nested tabs inside the product form MUST NOT render the selected-tab input*@
+        <nop-tabs id="productitemstatus-edit" asp-tab-name-to-select="tab-itemstatus-info" asp-render-selected-tab-input="false">
+            <nop-tab asp-name="tab-itemstatus-info" asp-title="@T("Admin.Catalog.Products.ItemStatus.Info")" asp-default="true">@await Html.PartialAsync("_CreateOrUpdate.ItemStatus.Info", Model)</nop-tab>
+            <nop-tab asp-name="tab-itemstatus-photos" asp-title="@T("Admin.Catalog.Products.ItemStatus.Photos")">@await Html.PartialAsync("_CreateOrUpdate.ItemStatus.Photos", Model)</nop-tab>
+            <nop-tab asp-name="tab-itemstatus-notes" asp-title="@T("Admin.Catalog.Products.ItemStatus.Notes")">@await Html.PartialAsync("_CreateOrUpdate.ItemStatus.Notes", Model)</nop-tab>
+        </nop-tabs>
+    }
+    else
+    {
+        @*[Mahjar item-status] photos, notes and the video all key on a product id, so there is nothing to attach
+            them to until the product exists*@
+        <div class="card card-default">
+            <div class="card-body">
+                @T("Admin.Catalog.Products.ItemStatus.SaveBeforeEdit")
+            </div>
+        </div>
+    }
+</div>

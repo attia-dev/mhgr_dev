@@ -1,0 +1,388 @@
+﻿@model VendorSettingsModel
+@using System.Text.Encodings.Web
+
+@*[Mahjar partner-agreement] The two master partner agreements and the Annex A schedule printed into them.
+
+    The bodies are localized — the Arabic text is the legally prevailing one — exactly like the short terms
+    body on the Common card. Everything else is a single store-wide legal value shown to every partner, so
+    none of it carries a per-store override checkbox.
+
+    Editing anything here changes only what FUTURE applicants read: the copy each partner accepted is frozen on
+    their own record, with its hash, and is opened from their page in Admin -> Partners.*@
+
+<div class="card-body">
+    <p class="text-muted">@T("Admin.Configuration.Settings.Vendor.PartnerAgreement.Hint")</p>
+
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="PartnerAgreementEnabled" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="PartnerAgreementEnabled" />
+            <span asp-validation-for="PartnerAgreementEnabled"></span>
+        </div>
+    </div>
+    <nop-nested-setting asp-for="PartnerAgreementEnabled">
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="PartnerAgreementVersion" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="PartnerAgreementVersion" />
+                <span asp-validation-for="PartnerAgreementVersion"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="PartnerAgreementEffectiveDateUtc" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="PartnerAgreementEffectiveDateUtc" />
+                <span asp-validation-for="PartnerAgreementEffectiveDateUtc"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="OperatorNationalAddress" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="OperatorNationalAddress" />
+                <span asp-validation-for="OperatorNationalAddress"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="VerificationMethod" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="VerificationMethod" />
+                <span asp-validation-for="VerificationMethod"></span>
+            </div>
+        </div>
+
+        <hr />
+        <h5>@T("Admin.Configuration.Settings.Vendor.CommercialSchedule")</h5>
+        <p class="text-muted">@T("Admin.Configuration.Settings.Vendor.CommercialSchedule.Hint")</p>
+
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RentalCommission" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="RentalCommission" />
+                <span asp-validation-for="RentalCommission"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="SaleCommission" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="SaleCommission" />
+                <span asp-validation-for="SaleCommission"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="ListingFee" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="ListingFee" />
+                <span asp-validation-for="ListingFee"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="InspectionFee" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="InspectionFee" />
+                <span asp-validation-for="InspectionFee"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="DeliveryFee" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="DeliveryFee" />
+                <span asp-validation-for="DeliveryFee"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="StorageFee" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="StorageFee" />
+                <span asp-validation-for="StorageFee"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="MinimumSettlement" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="MinimumSettlement" />
+                <span asp-validation-for="MinimumSettlement"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="PreparationTime" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="PreparationTime" />
+                <span asp-validation-for="PreparationTime"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="SettlementCycle" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="SettlementCycle" />
+                <span asp-validation-for="SettlementCycle"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="SettlementAccountTerms" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="SettlementAccountTerms" />
+                <span asp-validation-for="SettlementAccountTerms"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="ClaimResponseDays" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="ClaimResponseDays" />
+                <span asp-validation-for="ClaimResponseDays"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="TerminationNoticeDays" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="TerminationNoticeDays" />
+                <span asp-validation-for="TerminationNoticeDays"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="AmicableSettlementDays" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="AmicableSettlementDays" />
+                <span asp-validation-for="AmicableSettlementDays"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="ReturnInspectionDays" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="ReturnInspectionDays" />
+                <span asp-validation-for="ReturnInspectionDays"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="AgreementTerm" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="AgreementTerm" />
+                <span asp-validation-for="AgreementTerm"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RenewalBasis" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="RenewalBasis" />
+                <span asp-validation-for="RenewalBasis"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="CommercialNotes" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="CommercialNotes" />
+                <span asp-validation-for="CommercialNotes"></span>
+            </div>
+        </div>
+
+        <hr />
+        @*[Mahjar partner-agreement] the field picker. Clicking a field drops its token into whichever agreement
+            editor the cursor was last in — the store owner never has to remember how a token is spelled. Only
+            fields the renderer resolves are listed (the model factory filters them), grouped by where their
+            value comes from, so it doubles as the answer to "where do I set this?".*@
+        @if (Model.AgreementTokenGroups?.Any() ?? false)
+        {
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <label class="col-form-label">@T("Admin.Configuration.Settings.Vendor.AgreementFields")</label>
+                </div>
+                <div class="col-md-9">
+                    <a id="agreementFieldsShowHide" href="javascript:void(0);" onclick="mahjarToggleAgreementFields();">@T("Admin.Common.Show")</a>
+                    <div class="form-text text-muted">@T("Admin.Configuration.Settings.Vendor.AgreementFields.Hint")</div>
+                    <div id="pnlAgreementFields" class="d-none margin-top">
+                        @foreach (var group in Model.AgreementTokenGroups)
+                        {
+                            <div class="margin-bottom">
+                                <strong>@group.Title</strong>
+                                <div class="form-text text-muted">@group.Hint</div>
+                                <div class="mahjar-agreement-fields">
+                                    @foreach (var token in group.Tokens)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mahjar-agreement-field"
+                                                data-token="@token.Token" title="@token.Token">@token.Title</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <style>
+                .mahjar-agreement-fields { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+                .mahjar-agreement-field { font-size: 12px; }
+            </style>
+            @*Offer the same fields to the rich editors themselves, as a menu on their toolbar. This must run
+                BEFORE the editors initialise — plain script, not $(function) — because each editor decides at
+                init time whether to show the menu (see Views/Shared/EditorTemplates/RichEditor.cshtml).*@
+            <script>
+                (function () {
+                    var groups = @Html.Raw(Json.Serialize(Model.AgreementTokenGroups.Select(group => new
+                    {
+                        title = group.Title,
+                        tokens = group.Tokens.Select(token => new { token = token.Token, title = token.Title })
+                    })));
+                    var editors = ['IndividualBody', 'CorporateBody'];
+
+                    window.mahjarEditorFieldsLabel = '@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Configuration.Settings.Vendor.AgreementFields").Text))';
+                    window.mahjarEditorFieldsTooltip = '@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Configuration.Settings.Vendor.AgreementFields.Hint").Text))';
+
+                    //the localized editors are named Locales_0__IndividualBody and so on, so match on the suffix
+                    window.mahjarEditorFields = function (editorId) {
+                        if (!editorId) return null;
+                        for (var i = 0; i < editors.length; i++) {
+                            if (editorId === editors[i] || editorId.indexOf('_' + editors[i]) > 0)
+                                return groups;
+                        }
+                        return null;
+                    };
+                })();
+            </script>
+            <script>
+                function mahjarToggleAgreementFields() {
+                    $('#pnlAgreementFields').toggleClass('d-none');
+                    $('#agreementFieldsShowHide').text($('#pnlAgreementFields').hasClass('d-none')
+                        ? '@T("Admin.Common.Show")' : '@T("Admin.Common.Hide")');
+                }
+
+                $(function () {
+                    //remember which agreement editor was last in focus, so a click on a field knows where to go.
+                    //A button steals focus from TinyMCE, and tinymce.activeEditor is not reliable across the
+                    //language tabs, so the target is recorded on focus instead of read at click time.
+                    var mahjarLastAgreementEditor = null;
+                    var agreementEditorIds = ['IndividualBody', 'CorporateBody'];
+
+                    function mahjarIsAgreementEditor(editor) {
+                        if (!editor || !editor.id) return false;
+                        for (var i = 0; i < agreementEditorIds.length; i++) {
+                            if (editor.id === agreementEditorIds[i] || editor.id.indexOf('_' + agreementEditorIds[i]) > 0)
+                                return true;
+                        }
+                        return false;
+                    }
+
+                    function mahjarTrackEditors() {
+                        if (typeof tinymce === 'undefined' || !tinymce.editors) return;
+                        for (var i = 0; i < tinymce.editors.length; i++) {
+                            var ed = tinymce.editors[i];
+                            if (ed.mahjarTracked || !mahjarIsAgreementEditor(ed)) continue;
+                            ed.mahjarTracked = true;
+                            ed.on('focus', function () { mahjarLastAgreementEditor = this; });
+                            if (!mahjarLastAgreementEditor) mahjarLastAgreementEditor = ed;
+                        }
+                    }
+
+                    //editors are created as the language tabs render, so keep looking for a little while
+                    mahjarTrackEditors();
+                    var tracker = setInterval(mahjarTrackEditors, 500);
+                    setTimeout(function () { clearInterval(tracker); }, 15000);
+
+                    $(document).on('click', '.mahjar-agreement-field', function () {
+                        var token = $(this).data('token');
+                        mahjarTrackEditors();
+                        var editor = mahjarLastAgreementEditor;
+                        if (editor && !editor.isHidden()) {
+                            editor.focus();
+                            editor.execCommand('mceInsertContent', false, token);
+                        } else {
+                            //no editor to insert into (rich editor off, or none focused yet) — hand over the text
+                            if (navigator.clipboard) navigator.clipboard.writeText(token);
+                            alert('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Configuration.Settings.Vendor.AgreementFields.Copied").Text))' + ' ' + token);
+                        }
+                    });
+                });
+            </script>
+        }
+
+        @*the documents themselves, one text per language — the Arabic body is the prevailing one*@
+        @(await Html.LocalizedEditorAsync<VendorSettingsModel, VendorSettingsLocalizedModel>("partneragreementsettings-bodies-localized",
+            @<div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="@Model.Locales[item].IndividualBody" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="@Model.Locales[item].IndividualBody" asp-template="RichEditor" />
+                        <span asp-validation-for="@Model.Locales[item].IndividualBody"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="@Model.Locales[item].CorporateBody" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="@Model.Locales[item].CorporateBody" asp-template="RichEditor" />
+                        <span asp-validation-for="@Model.Locales[item].CorporateBody"></span>
+                    </div>
+                </div>
+                <input type="hidden" asp-for="@Model.Locales[item].LanguageId" />
+            </div>
+            ,
+            @<div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="IndividualBody" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="IndividualBody" asp-template="RichEditor" />
+                        <span asp-validation-for="IndividualBody"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="CorporateBody" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="CorporateBody" asp-template="RichEditor" />
+                        <span asp-validation-for="CorporateBody"></span>
+                    </div>
+                </div>
+            </div>
+            ,
+            //localizable settings per store (overridden store settings) are not supported yet
+            true
+            ))
+    </nop-nested-setting>
+</div>

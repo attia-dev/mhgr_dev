@@ -1,0 +1,28 @@
+@model Nop.Web.Models.Notification.NotificationBellModel
+@*[Mahjar notifications] header bell + unread badge; flyout filled by mahjar.notifications.js*@
+<li class="notification-bell" id="notification-bell"
+    data-group="@Model.Group"
+    data-feed-url="@Url.RouteUrl("NotificationFeed")"
+    data-mark-read-url="@Url.RouteUrl("NotificationMarkRead")"
+    data-mark-all-url="@Url.RouteUrl("NotificationMarkAllRead")"
+    data-all-url="@Url.RouteUrl("CustomerNotifications")">
+    <a href="#" class="ico-notifications" id="notification-bell-toggle" role="button" aria-haspopup="true" title="@T("mahjar.notifications.bell")">
+        <svg class="notification-bell-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        </svg>
+        <span class="notification-label">@T("mahjar.notifications.bell")</span>
+        <span class="notification-unread @(Model.UnreadCount == 0 ? "empty" : "")">@Model.UnreadCount</span>
+    </a>
+    <div class="notification-flyout" id="notification-flyout">
+        <div class="notification-flyout-head">
+            <span class="title">@T("mahjar.notifications.title")</span>
+            <a href="#" class="mark-all-read">@T("mahjar.notifications.markallread")</a>
+        </div>
+        <ul class="notification-flyout-list"></ul>
+        <div class="notification-flyout-foot">
+            <a href="@Url.RouteUrl("CustomerNotifications")">@T("mahjar.notifications.viewall")</a>
+        </div>
+    </div>
+</li>

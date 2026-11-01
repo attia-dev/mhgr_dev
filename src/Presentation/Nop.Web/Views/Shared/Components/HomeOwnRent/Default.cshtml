@@ -1,0 +1,74 @@
+@model HomeOwnRentModel
+@*[Mahjar home-motion] "Own or Rent" — the store's two paths as one editorial band: two large tiles (stacked on
+  mobile), each staging a real home-page watch on a display plate with its true price. The piece IS the call to
+  action: the tile and its button ("Own the …" / "Rent the …") lead to the watch itself, where it is bought or its
+  rental dates are chosen; the category it belongs to is a small secondary link. Hover: the watch zooms, the tile
+  grows, the arrow nudges (mahjar.home.css).*@
+@{
+    var tiles = new List<(string Kind, HomeOwnRentModel.TileModel Tile)>();
+    if (Model.Own != null)
+        tiles.Add(("own", Model.Own));
+    if (Model.Rent != null)
+        tiles.Add(("rent", Model.Rent));
+
+    //"Own the {0}" / "Rent the {0}" with the watch name isolated (its script may differ from the page's)
+    Microsoft.AspNetCore.Html.IHtmlContent PieceCta(string format, string name)
+    {
+        var encoder = System.Text.Encodings.Web.HtmlEncoder.Default;
+        return new Microsoft.AspNetCore.Html.HtmlString(string.Format(encoder.Encode(format ?? "{0}"),
+            "<bdi>" + encoder.Encode(name ?? string.Empty) + "</bdi>"));
+    }
+}
+<section class="mhx-section mhx-ownrent" id="mhx-ownrent">
+    <header class="mhx-head mhx-rv">
+        <p class="mhx-head__eyebrow">@T("Mahjar.Home.OwnRent.Eyebrow")</p>
+        <h2 class="mhx-head__title mhx-display">@T("Mahjar.Home.OwnRent.Title")</h2>
+        <span class="mhx-head__line" aria-hidden="true"></span>
+    </header>
+    <div class="mhx-ownrent__grid mhx-ownrent__grid--@tiles.Count">
+        @for (var i = 0; i < tiles.Count; i++)
+        {
+            var (kind, tile) = tiles[i];
+            var isRent = kind == "rent";
+            var ctaFormat = isRent ? T("Mahjar.Home.OwnRent.RentCta").Text : T("Mahjar.Home.OwnRent.OwnCta").Text;
+            var ctaLabel = string.Format(ctaFormat, tile.ProductName);
+            <article class="mhx-tile mhx-tile--@kind mhx-rv">
+                <a class="mhx-tile__link" href="@tile.ProductUrl" aria-label="@(isRent ? T("Mahjar.Home.OwnRent.Rent.Title") : T("Mahjar.Home.OwnRent.Own.Title")) — @ctaLabel"></a>
+                <div class="mhx-tile__stage" aria-hidden="true">
+                    <span class="mhx-tile__halo"></span>
+                    <span class="mhx-tile__ring"></span>
+                    <div class="mhx-tile__plate">
+                        @if (!string.IsNullOrEmpty(tile.PictureUrl))
+                        {
+                            <div class="mhx-tile__float"><img class="mhx-tile__img" src="@tile.PictureUrl" alt="" loading="lazy" decoding="async" /></div>
+                        }
+                    </div>
+                </div>
+                <div class="mhx-tile__body">
+                    <p class="mhx-tile__eyebrow"><span class="mhx-tile__num">@((i + 1).ToString("00", CultureInfo.InvariantCulture))</span>@(isRent ? T("Mahjar.Home.OwnRent.Rent.Eyebrow") : T("Mahjar.Home.OwnRent.Own.Eyebrow"))</p>
+                    <h3 class="mhx-tile__title mhx-display">@(isRent ? T("Mahjar.Home.OwnRent.Rent.Title") : T("Mahjar.Home.OwnRent.Own.Title"))</h3>
+                    <p class="mhx-tile__text">@(isRent ? T("Mahjar.Home.OwnRent.Rent.Text") : T("Mahjar.Home.OwnRent.Own.Text"))</p>
+                    <p class="mhx-tile__piece">
+                        <span class="mhx-tile__product"><bdi>@tile.ProductName</bdi></span>
+                        @if (!string.IsNullOrEmpty(tile.PriceText))
+                        {
+                            <span class="mhx-tile__price"><bdi>@tile.PriceText</bdi></span>
+                        }
+                        @if (tile.HasDeposit)
+                        {
+                            <span class="mhx-tile__deposit">@T("Mahjar.Home.OwnRent.Deposit")</span>
+                        }
+                    </p>
+                    <span class="mhx-tile__cta" aria-hidden="true">
+                        <span>@PieceCta(ctaFormat, tile.ProductName)</span>
+                        <svg viewBox="0 0 24 24" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                    </span>
+                    @if (!string.IsNullOrEmpty(tile.CategoryUrl))
+                    {
+                        <a class="mhx-tile__cat" href="@tile.CategoryUrl">@string.Format(T("Mahjar.Home.OwnRent.Browse").Text, tile.CategoryName)</a>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+</section>

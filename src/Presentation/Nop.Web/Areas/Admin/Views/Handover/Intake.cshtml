@@ -1,0 +1,113 @@
+@* [Mahjar handover] record an intake: pick the product a partner delivered, then document its condition *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HandoverIntakeModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.handover.intake.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Mahjar handovers");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("admin.mahjar.handover.intake.title")
+        <small>
+            <i class="fas fa-arrow-circle-left"></i>
+            <a asp-action="List">@T("admin.mahjar.handover.backtolist")</a>
+        </small>
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        <p class="text-muted">@T("admin.mahjar.handover.intake.hint")</p>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="SearchTerm" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="SearchTerm" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-9 offset-md-3">
+                                <div id="intake-results"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* one tiny form per result, so the start is a proper antiforgery-protected POST *@
+<form asp-action="StartIntake" method="post" id="intake-start-form">
+    <input type="hidden" name="productId" id="intake-product-id" />
+</form>
+
+<script asp-location="Footer">
+    $(function () {
+        const noResults = @Html.Raw(Json.Serialize(T("admin.mahjar.handover.intake.noresults").Text));
+        const startText = @Html.Raw(Json.Serialize(T("admin.mahjar.handover.intake.start").Text));
+        const $results = $('#intake-results');
+        let timer = null;
+
+        function escapeHtml(value) {
+            return $('<div/>').text(value == null ? '' : value).html();
+        }
+
+        function search(term) {
+            if (!term || term.length < 2) {
+                $results.empty();
+                return;
+            }
+
+            const postData = { term: term };
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: 'POST',
+                url: '@Url.Action("SearchProducts", "Handover")',
+                data: postData,
+                success: function (items) {
+                    if (!items || !items.length) {
+                        $results.html('<em>' + escapeHtml(noResults) + '</em>');
+                        return;
+                    }
+
+                    let html = '<table class="table table-hover table-bordered"><tbody>';
+                    items.forEach(function (item) {
+                        html += '<tr><td>' + escapeHtml(item.name) + (item.sku ? '<br/><small>' + escapeHtml(item.sku) + '</small>' : '') + '</td>' +
+                            '<td style="width:170px"><button type="button" class="btn btn-primary intake-start" data-id="' + item.id + '">' +
+                            '<i class="fas fa-camera"></i> ' + escapeHtml(startText) + '</button></td></tr>';
+                    });
+                    html += '</tbody></table>';
+                    $results.html(html);
+                }
+            });
+        }
+
+        $('#@Html.IdFor(model => model.SearchTerm)').on('input', function () {
+            const term = $(this).val().trim();
+            clearTimeout(timer);
+            timer = setTimeout(function () { search(term); }, 300);
+        }).on('keydown', function (e) {
+            //never submit anything on enter
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+
+        $results.on('click', '.intake-start', function () {
+            $('#intake-product-id').val($(this).data('id'));
+            $('#intake-start-form').submit();
+        });
+    });
+</script>

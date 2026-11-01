@@ -1,0 +1,92 @@
+@model HomeSlidesModel
+@*[Mahjar home-motion] FEATURE bands — full-bleed ~70vh editorial bands between the categories and the featured
+  products. The picture drifts with a rAF parallax (transform only, never background-attachment:fixed), the overlay
+  darkness is the slide's OverlayOpacity, and the text is revealed by a mask wipe when the band scrolls into view
+  (mahjar.home.css / mahjar.home.js). A Spotlight band stages the picture on the brand display plate instead.*@
+<section class="mhx-features" aria-label="@T("Mahjar.Home.Features.Label")">
+    @foreach (var s in Model.Slides)
+    {
+        var overlay = (s.OverlayOpacity / 100.0).ToString("0.##", CultureInfo.InvariantCulture);
+        var hasCta = !string.IsNullOrEmpty(s.Url) && !string.IsNullOrEmpty(s.ButtonText);
+        <article class="mhx-band mhx-band--@s.Layout mhx-pos-@s.ContentPosition" style="--mhx-ov:@overlay">
+            @if (s.Layout == "spotlight")
+            {
+                <div class="mhx-band__media mhx-stage" aria-hidden="true">
+                    <span class="mhx-stage__glow"></span>
+                    <span class="mhx-stage__cone"></span>
+                    <div class="mhx-stage__obj mhx-band__px">
+                        <div class="mhx-stage__ringwrap">
+                            <svg class="mhx-stage__rings" viewBox="0 0 600 600" focusable="false">
+                                <circle cx="300" cy="300" r="296" class="mhx-r mhx-r--c" />
+                                <circle cx="300" cy="300" r="282" class="mhx-r mhx-r--min" />
+                                <circle cx="300" cy="300" r="282" class="mhx-r mhx-r--hour" />
+                                <circle cx="300" cy="300" r="266" class="mhx-r mhx-r--c2" />
+                                <g class="mhx-rings__inner">
+                                    <circle cx="300" cy="300" r="250" class="mhx-r mhx-r--dash" />
+                                </g>
+                            </svg>
+                        </div>
+                        <span class="mhx-stage__shadow"></span>
+                        <div class="mhx-stage__platewrap">
+                            <div class="mhx-stage__plate">
+                                <div class="mhx-stage__float">
+                                    <div class="mhx-stage__spin">
+                                        <picture>
+                                            <source media="(max-width: 640px)" srcset="@s.MobileImageUrl" />
+                                            <img class="mhx-stage__watch" src="@s.ImageUrl" alt="" loading="lazy" decoding="async" />
+                                        </picture>
+                                    </div>
+                                </div>
+                                <span class="mhx-stage__sweep"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="mhx-band__media" aria-hidden="true">
+                    <div class="mhx-band__px">
+                        <picture>
+                            <source media="(max-width: 640px)" srcset="@s.MobileImageUrl" />
+                            <img class="mhx-band__img" src="@s.ImageUrl" alt="" loading="lazy" decoding="async" />
+                        </picture>
+                    </div>
+                    <span class="mhx-band__scrim"></span>
+                </div>
+            }
+            <div class="mhx-band__content">
+                <div class="mhx-band__inner">
+                    @if (!string.IsNullOrEmpty(s.Kicker))
+                    {
+                        <p class="mhx-kicker mhx-wipe"><span class="mhx-kicker__line" aria-hidden="true"></span><span class="mhx-kicker__text" dir="auto">@s.Kicker</span></p>
+                    }
+                    @*dir="auto" on every admin text: a band filled in one language only shows its fallback text in its own direction*@
+                    <h2 class="mhx-band__title mhx-display mhx-wipe" dir="auto">@s.Title</h2>
+                    @if (!string.IsNullOrEmpty(s.Subtitle))
+                    {
+                        <p class="mhx-sub mhx-wipe" dir="auto">@s.Subtitle</p>
+                    }
+                    @if (hasCta)
+                    {
+                        <a class="mhx-cta mhx-wipe" href="@s.Url" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)">
+                            <span class="mhx-cta__label" dir="auto">@s.ButtonText</span>
+                            <svg class="mhx-cta__arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                        </a>
+                    }
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(s.Url))
+            {
+                if (hasCta)
+                {
+                    <a class="mhx-slide__hit" href="@s.Url" tabindex="-1" aria-hidden="true" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)"></a>
+                }
+                else
+                {
+                    <a class="mhx-slide__hit" href="@s.Url" aria-label="@s.Title" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)"></a>
+                }
+            }
+        </article>
+    }
+</section>

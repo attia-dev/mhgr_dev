@@ -1,0 +1,101 @@
+@* [Mahjar contracts] admin-editable, localized, tokenized contract template (one per contract kind) *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model ContractTemplateContentModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.contracts.template.edit.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Contract template");
+}
+
+<form asp-controller="ContractRequest" asp-action="EditTemplate" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.contracts.template.edit.title") - @Model.Name
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="Templates">@T("admin.mahjar.contracts.template.backtolist")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.Save")
+            </button>
+            <button type="submit" name="save-continue" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.SaveContinue")
+            </button>
+        </div>
+    </div>
+
+    <div asp-validation-summary="All"></div>
+    <input asp-for="Id" type="hidden" />
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Name" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="Name" />
+                                    <span asp-validation-for="Name"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="TemplateType" />
+                                </div>
+                                <div class="col-md-9">
+                                    @* the kind is what binds a template to a cart, so it is shown, not edited *@
+                                    <div class="form-text-row">@Model.TemplateType</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <p>@T("admin.mahjar.contracts.template.tokens.hint")</p>
+                        </div>
+                    </div>
+                    <div class="card card-default">
+                        <div class="card-body">
+                            @(await Html.LocalizedEditorAsync<ContractTemplateContentModel, ContractTemplateLocalizedModel>("contracttemplate-localized",
+                                @<div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].Body" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].Body" asp-template="RichEditor" />
+                                            <span asp-validation-for="@Model.Locales[item].Body"></span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" asp-for="@Model.Locales[item].LanguageId" />
+                                </div>
+                                ,
+                                    @<div>
+                                        <div class="form-group row">
+                                            <div class="col-md-3">
+                                                <nop-label asp-for="Body" />
+                                            </div>
+                                            <div class="col-md-9">
+                                                <nop-editor asp-for="Body" asp-template="RichEditor" />
+                                                <span asp-validation-for="Body"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ))
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

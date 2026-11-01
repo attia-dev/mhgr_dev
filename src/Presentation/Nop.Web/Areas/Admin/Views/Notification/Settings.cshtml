@@ -1,0 +1,53 @@
+@model Nop.Web.Areas.Admin.Models.Notification.NotificationPreferenceModel
+@*[Mahjar notifications] admin/vendor per-type notification preferences*@
+@{
+    Layout = "_AdminLayout";
+    NopHtml.SetActiveMenuItemSystemName("Notifications");
+    ViewBag.PageTitle = T("mahjar.notifications.settings.title").Text;
+}
+
+<form asp-controller="Notification" asp-action="Settings" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">@T("mahjar.notifications.settings.title")</h1>
+        <div class="float-right">
+            <button type="submit" class="btn btn-primary">
+                <i class="far fa-save"></i> @T("Admin.Common.Save")
+            </button>
+        </div>
+    </div>
+    <div class="content">
+        <div class="card card-default">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>@T("mahjar.notifications.title")</th>
+                            <th class="text-center" style="width:120px">@T("mahjar.notifications.settings.inapp")</th>
+                            <th class="text-center" style="width:120px">@T("mahjar.notifications.settings.email")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.Items.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    @Model.Items[i].TypeLabel
+                                    <input type="hidden" name="Items[@i].TypeId" value="@Model.Items[i].TypeId" />
+                                    <input type="hidden" name="Items[@i].TypeLabel" value="@Model.Items[i].TypeLabel" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Items[@i].InAppEnabled" value="true" @(Model.Items[i].InAppEnabled ? "checked" : "") />
+                                    <input type="hidden" name="Items[@i].InAppEnabled" value="false" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" name="Items[@i].EmailEnabled" value="true" @(Model.Items[i].EmailEnabled ? "checked" : "") />
+                                    <input type="hidden" name="Items[@i].EmailEnabled" value="false" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>

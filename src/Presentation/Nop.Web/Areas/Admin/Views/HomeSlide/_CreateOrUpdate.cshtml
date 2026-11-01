@@ -1,0 +1,39 @@
+@* [Mahjar home-slides] the slide form: four cards (content, media, link, display) beside a sticky live preview *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    const string hideContentBlockAttributeName = "HomeSlidePage.HideContentBlock";
+    const string hideMediaBlockAttributeName = "HomeSlidePage.HideMediaBlock";
+    const string hideLinkBlockAttributeName = "HomeSlidePage.HideLinkBlock";
+    const string hideDisplayBlockAttributeName = "HomeSlidePage.HideDisplayBlock";
+
+    var customer = await workContext.GetCurrentCustomerAsync();
+    var hideContentBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideContentBlockAttributeName);
+    var hideMediaBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideMediaBlockAttributeName);
+    var hideLinkBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideLinkBlockAttributeName);
+    var hideDisplayBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideDisplayBlockAttributeName);
+}
+
+<div asp-validation-summary="All"></div>
+<input asp-for="Id" type="hidden" />
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="row mhgr-hs-editor">
+                <div class="col-xl-8">
+                    <nop-cards id="homeslide-cards">
+                        <nop-card asp-name="homeslide-content" asp-icon="fas fa-heading" asp-title="@T("admin.mahjar.homeslides.card.content")" asp-hide-block-attribute-name="@hideContentBlockAttributeName" asp-hide="@hideContentBlock" asp-advanced="false">@await Html.PartialAsync("_CreateOrUpdate.Content", Model)</nop-card>
+                        <nop-card asp-name="homeslide-media" asp-icon="far fa-image" asp-title="@T("admin.mahjar.homeslides.card.media")" asp-hide-block-attribute-name="@hideMediaBlockAttributeName" asp-hide="@hideMediaBlock" asp-advanced="false">@await Html.PartialAsync("_CreateOrUpdate.Media", Model)</nop-card>
+                        <nop-card asp-name="homeslide-link" asp-icon="fas fa-link" asp-title="@T("admin.mahjar.homeslides.card.link")" asp-hide-block-attribute-name="@hideLinkBlockAttributeName" asp-hide="@hideLinkBlock" asp-advanced="false">@await Html.PartialAsync("_CreateOrUpdate.Link", Model)</nop-card>
+                        <nop-card asp-name="homeslide-display" asp-icon="fas fa-tv" asp-title="@T("admin.mahjar.homeslides.card.display")" asp-hide-block-attribute-name="@hideDisplayBlockAttributeName" asp-hide="@hideDisplayBlock" asp-advanced="false">@await Html.PartialAsync("_CreateOrUpdate.Display", Model)</nop-card>
+                    </nop-cards>
+                </div>
+                <div class="col-xl-4">
+                    @await Html.PartialAsync("_CreateOrUpdate.Preview", Model)
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

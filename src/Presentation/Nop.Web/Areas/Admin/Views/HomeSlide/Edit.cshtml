@@ -1,0 +1,42 @@
+@* [Mahjar home-slides] edit a home slide *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.homeslides.editdetails").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Home slides");
+}
+
+<form asp-controller="HomeSlide" asp-action="Edit" method="post" id="homeslide-form">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.homeslides.editdetails") - <bdi>@Model.Title</bdi>
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("admin.mahjar.homeslides.backtolist")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <a href="@Model.StoreUrl" target="_blank" rel="noopener" class="btn bg-olive">
+                <i class="fas fa-store"></i>
+                @T("admin.mahjar.homeslides.list.viewstore")
+            </a>
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.Save")
+            </button>
+            <button type="submit" name="save-continue" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.SaveContinue")
+            </button>
+            <span id="homeslide-delete" class="btn btn-danger">
+                <i class="far fa-trash-can"></i>
+                @T("Admin.Common.Delete")
+            </span>
+        </div>
+    </div>
+    @await Html.PartialAsync("_CreateOrUpdate", Model)
+</form>
+<nop-delete-confirmation asp-model-id="@Model.Id" asp-button-id="homeslide-delete" />

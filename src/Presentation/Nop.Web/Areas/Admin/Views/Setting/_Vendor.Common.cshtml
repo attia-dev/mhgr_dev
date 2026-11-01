@@ -1,0 +1,128 @@
+﻿@model VendorSettingsModel
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-override-store-checkbox asp-for="AllowCustomersToApplyForVendorAccount_OverrideForStore" asp-input="AllowCustomersToApplyForVendorAccount" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+            <nop-label asp-for="AllowCustomersToApplyForVendorAccount" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="AllowCustomersToApplyForVendorAccount" />
+            <span asp-validation-for="AllowCustomersToApplyForVendorAccount"></span>
+        </div>
+    </div>
+    <nop-nested-setting asp-for="AllowCustomersToApplyForVendorAccount">
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-override-store-checkbox asp-for="TermsOfServiceEnabled_OverrideForStore" asp-input="TermsOfServiceEnabled" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                <nop-label asp-for="TermsOfServiceEnabled" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="TermsOfServiceEnabled" />
+                <span asp-validation-for="TermsOfServiceEnabled"></span>
+            </div>
+        </div>
+        @*[Mahjar vendor-application] the terms body the applicant must accept, one text per language. This is the
+            single source of truth for both the web form (/vendor/apply) and the mobile app.
+            [Mahjar partner-agreement] ...unless the master partner agreements are enabled, which supersede it. The
+            editor is then hidden so the page does not show two competing "terms", but the text is carried through
+            the form in hidden fields: a settings save posts what it renders, so dropping the fields would silently
+            blank the fallback body.*@
+        <nop-nested-setting asp-for="TermsOfServiceEnabled">
+            @if (Model.PartnerAgreementEnabled)
+            {
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="TermsOfService" />
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-text-row">@T("Admin.Configuration.Settings.Vendor.TermsOfService.Superseded")</div>
+                    </div>
+                </div>
+                <input type="hidden" asp-for="TermsOfService" />
+                @*only the fallback body: LanguageId and the two agreement bodies are posted by the
+                    Partner agreement card, and a second copy here would bind as a duplicate*@
+                for (var i = 0; i < Model.Locales.Count; i++)
+                {
+                    <input type="hidden" asp-for="@Model.Locales[i].TermsOfService" />
+                }
+            }
+            else
+            {
+            @(await Html.LocalizedEditorAsync<VendorSettingsModel, VendorSettingsLocalizedModel>("vendorsettings-termsofservice-localized",
+                @<div>
+                    <div class="form-group row">
+                        <div class="col-md-3">
+                            <nop-override-store-checkbox asp-for="TermsOfService_OverrideForStore" asp-input="@Model.Locales[item].TermsOfService" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                            <nop-label asp-for="@Model.Locales[item].TermsOfService" />
+                        </div>
+                        <div class="col-md-9">
+                            <nop-editor asp-for="@Model.Locales[item].TermsOfService" asp-template="RichEditor" />
+                            <span asp-validation-for="@Model.Locales[item].TermsOfService"></span>
+                        </div>
+                    </div>
+                    <input type="hidden" asp-for="@Model.Locales[item].LanguageId" />
+                </div>
+                ,
+                @<div>
+                    <div class="form-group row">
+                        <div class="col-md-3">
+                            <nop-override-store-checkbox asp-for="TermsOfService_OverrideForStore" asp-input="TermsOfService" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                            <nop-label asp-for="TermsOfService" />
+                        </div>
+                        <div class="col-md-9">
+                            <nop-editor asp-for="TermsOfService" asp-template="RichEditor" />
+                            <span asp-validation-for="TermsOfService"></span>
+                        </div>
+                    </div>
+                </div>
+                ,
+                //localizable settings per store (overridden store settings) are not supported yet
+                true
+                ))
+            }
+        </nop-nested-setting>
+    </nop-nested-setting>
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-override-store-checkbox asp-for="AllowVendorsToEditInfo_OverrideForStore" asp-input="AllowVendorsToEditInfo" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+            <nop-label asp-for="AllowVendorsToEditInfo" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="AllowVendorsToEditInfo" />
+            <span asp-validation-for="AllowVendorsToEditInfo"></span>
+        </div>
+    </div>
+    <nop-nested-setting asp-for="AllowVendorsToEditInfo">
+        <div class="form-group row advanced-setting">
+            <div class="col-md-3">
+                <nop-override-store-checkbox asp-for="NotifyStoreOwnerAboutVendorInformationChange_OverrideForStore" asp-input="NotifyStoreOwnerAboutVendorInformationChange" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                <nop-label asp-for="NotifyStoreOwnerAboutVendorInformationChange" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="NotifyStoreOwnerAboutVendorInformationChange" />
+                <span asp-validation-for="NotifyStoreOwnerAboutVendorInformationChange"></span>
+            </div>
+        </div>
+    </nop-nested-setting>
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-override-store-checkbox asp-for="MaximumProductNumber_OverrideForStore" asp-input="MaximumProductNumber" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+            <nop-label asp-for="MaximumProductNumber" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="MaximumProductNumber" />
+            <span asp-validation-for="MaximumProductNumber"></span>
+        </div>
+    </div>
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-override-store-checkbox asp-for="AllowVendorsToImportProducts_OverrideForStore" asp-input="AllowVendorsToImportProducts" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+            <nop-label asp-for="AllowVendorsToImportProducts" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="AllowVendorsToImportProducts" />
+            <span asp-validation-for="AllowVendorsToImportProducts"></span>
+        </div>
+    </div>
+</div>

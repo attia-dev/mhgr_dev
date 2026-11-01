@@ -1,0 +1,153 @@
+﻿@model ProductDetailsModel
+
+@*[Mahjar item-status] the customer-facing condition report ("حالة القطعة"): grade pill, summary, the real photos
+    of this exact piece, one recorded video and the condition notes. Rendered as the first block of
+    div.product-collateral, as a sibling of the specifications box. Every string comes from a locale resource
+    seeded by ItemStatusMigration — a key that is missing there renders as its own literal text.*@
+
+@using Nop.Core.Domain.Media
+@inject MediaSettings mediaSettings
+
+@if (Model.ItemStatus?.HasAny == true)
+{
+    var itemStatus = Model.ItemStatus;
+    var photoStripId = $"item-status-photos-{Model.Id}";
+
+    @*[Mahjar item-status] re-emit the magnific-popup pair defensively: this section can render on a product whose
+        main gallery emitted neither (a single non-zoomable picture), and magnific tolerates a double load*@
+    <link rel="stylesheet" href="~/lib_npm/magnific-popup/magnific-popup.css" />
+    <script asp-exclude-from-bundle="true" src="~/lib_npm/magnific-popup/jquery.magnific-popup.min.js" asp-location="Footer"></script>
+
+    <div class="item-status-box" id="item-status-@Model.Id">
+        <div class="item-status-header">
+            <div class="item-status-heading">
+                <strong class="item-status-title">@T("mahjar.itemstatus.title")</strong>
+                <span class="item-status-subtitle">@T("mahjar.itemstatus.subtitle")</span>
+                @if (!string.IsNullOrEmpty(itemStatus.InspectedOn))
+                {
+                    <span class="item-status-inspected">
+                        @T("mahjar.itemstatus.inspectedon"): <span class="item-status-inspected-date">@itemStatus.InspectedOn</span>
+                    </span>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(itemStatus.GradeText))
+            {
+                <div class="item-status-grade">
+                    <span class="item-status-grade-label">@T("mahjar.itemstatus.grade")</span>
+                    <span class="item-status-grade-pill @itemStatus.GradeCssClass">@itemStatus.GradeText</span>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(itemStatus.Summary))
+        {
+            <div class="item-status-section item-status-summary-section">
+                <div class="item-status-section-title">@T("mahjar.itemstatus.summary")</div>
+                <p class="item-status-summary">@itemStatus.Summary</p>
+            </div>
+        }
+
+        @if (itemStatus.Photos.Any())
+        {
+            <div class="item-status-section item-status-photos-section">
+                <div class="item-status-section-title">@T("mahjar.itemstatus.photos")</div>
+                <div class="item-status-photo-strip" id="@photoStripId">
+                    @foreach (var photo in itemStatus.Photos)
+                    {
+                        <figure class="item-status-photo">
+                            <a class="item-status-photo-link" href="@photo.FullSizeImageUrl" title="@photo.Caption">
+                                @*[Mahjar item-status] the 550px detail asset is the BASE image, not the 100px gallery
+                                    thumb: the strip paints these at 150px+ on desktop and ~62% of the viewport on a
+                                    phone, so serving the thumb would upscale every condition photo and blur exactly
+                                    the scratch the partner photographed*@
+                                <img src="@photo.ImageUrl" alt="@photo.AlternateText" title="@photo.Caption" loading="lazy" />
+                            </a>
+                            @if (!string.IsNullOrEmpty(photo.Caption))
+                            {
+                                <figcaption class="item-status-photo-caption">@photo.Caption</figcaption>
+                            }
+                        </figure>
+                    }
+                </div>
+            </div>
+
+            @*[Mahjar item-status] same magnific init as _ProductDetailsPictures.cshtml, with its own delegate so the
+                two galleries on the page never capture each other's anchors; the caption is the lightbox title*@
+            <script asp-location="Footer">
+                $(function() {
+                    $('#@photoStripId').magnificPopup(
+                        {
+                            type: 'image',
+                            delegate: 'a.item-status-photo-link',
+                            removalDelay: 300,
+                            image: {
+                                //[Mahjar handover] captions are partner text — and now also handover-staff text published by a receipt —
+                                //so they are shown as TEXT: magnific 1.1 would inject the raw title attribute as HTML
+                                titleSrc: function (item) { return $('<div/>').text(item.el.attr('title') || '').html(); }
+                            },
+                            gallery: {
+                                enabled: true,
+                                navigateByImgClick: true,
+                                preload: [0, 1],
+                                tPrev: '@T("Media.MagnificPopup.Previous")',
+                                tNext: '@T("Media.MagnificPopup.Next")',
+                                tCounter: '@T("Media.MagnificPopup.Counter")'
+                            },
+                            tClose: '@T("Media.MagnificPopup.Close")',
+                            tLoading: '@T("Media.MagnificPopup.Loading")'
+                        });
+                });
+            </script>
+        }
+
+        @if (!string.IsNullOrEmpty(itemStatus.VideoUrl))
+        {
+            <div class="item-status-section item-status-video-section">
+                <div class="item-status-section-title">@T("mahjar.itemstatus.video")</div>
+                @if (itemStatus.VideoIsFile)
+                {
+                    @*a file we host: the static-file middleware serves it with HTTP range support, so the player can seek*@
+                    <div class="item-status-video-frame">
+                        <video class="item-status-video-player" src="@itemStatus.VideoUrl" controls preload="metadata" playsinline>
+                            @T("mahjar.itemstatus.videounsupported")
+                        </video>
+                    </div>
+                }
+                else
+                {
+                    @*an external embed URL the partner pasted — embedded the same way the product videos are*@
+                    <div class="item-status-video-frame item-status-video-frame--embed">
+                        <iframe class="item-status-video-embed" src="@itemStatus.VideoUrl" title="@T("mahjar.itemstatus.video")" frameborder="0" allow="@mediaSettings.VideoIframeAllow" allowfullscreen></iframe>
+                    </div>
+                    <a class="item-status-video-link" href="@itemStatus.VideoUrl" target="_blank" rel="noopener noreferrer">@T("mahjar.itemstatus.watchvideo")</a>
+                }
+            </div>
+        }
+
+        <div class="item-status-section item-status-notes-section">
+            <div class="item-status-section-title">@T("mahjar.itemstatus.notes")</div>
+            @if (itemStatus.Notes.Any())
+            {
+                <ul class="item-status-note-list">
+                    @foreach (var note in itemStatus.Notes)
+                    {
+                        <li class="item-status-note @note.SeverityCssClass">
+                            <span class="item-status-note-dot" aria-hidden="true"></span>
+                            <div class="item-status-note-body">
+                                <div class="item-status-note-meta">
+                                    <span class="item-status-note-type">@note.TypeText</span>
+                                    <span class="item-status-note-severity">@note.SeverityText</span>
+                                </div>
+                                <div class="item-status-note-text">@note.Text</div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="item-status-no-notes">@T("mahjar.itemstatus.nonotes")</div>
+            }
+        </div>
+    </div>
+}

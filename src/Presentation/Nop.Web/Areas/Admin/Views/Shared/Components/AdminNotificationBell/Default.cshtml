@@ -1,0 +1,20 @@
+@model Nop.Web.Areas.Admin.Models.Notification.AdminNotificationBellModel
+@*[Mahjar notifications] admin/vendor navbar bell; flyout filled by mahjar.admin.notifications.js*@
+<li class="nav-item dropdown admin-notification-bell" id="admin-notification-bell"
+    data-group="@Model.Group"
+    data-feed-url="@Url.Action("Feed", "Notification", new { area = "Admin" })"
+    data-mark-read-url="@Url.Action("MarkRead", "Notification", new { area = "Admin" })"
+    data-mark-all-url="@Url.Action("MarkAllRead", "Notification", new { area = "Admin" })">
+    <a class="nav-link" href="#" id="admin-notification-toggle" data-toggle="dropdown" title="@T("mahjar.notifications.title")">
+        <i class="far fa-bell"></i>
+        <span class="badge badge-warning navbar-badge notification-unread @(Model.UnreadCount == 0 ? "empty" : "")">@Model.UnreadCount</span>
+    </a>
+    <div class="dropdown-menu dropdown-menu-right notification-flyout">
+        <div class="dropdown-header notification-flyout-head">
+            <span>@T("mahjar.notifications.title")</span>
+            <a href="#" class="mark-all-read">@T("mahjar.notifications.markallread")</a>
+        </div>
+        <div class="notification-flyout-list"></div>
+        <a href="@Url.Action("List", "Notification", new { area = "Admin" })" class="dropdown-item dropdown-footer">@T("mahjar.notifications.viewall")</a>
+    </div>
+</li>

@@ -1,0 +1,106 @@
+@* [Mahjar home-slides] the slide pictures (stock uploader), how the slide is composed, and the optional web video.
+   The size advice follows the layout (a wide photo for full bleed, a square shot for spotlight); the overlay slider
+   only exists for full bleed, and the video only plays in a full-bleed hero, so both say so when they do not apply. *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    var spotlight = (int)HomeSlideLayout.Spotlight;
+}
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="PictureId" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="PictureId" />
+            <span asp-validation-for="PictureId"></span>
+            <div class="mhgr-hs-size" data-layout-hint="fullbleed"><i class="fas fa-desktop"></i> @T("admin.mahjar.homeslides.fields.picture.size")</div>
+            <div class="mhgr-hs-size" data-layout-hint="spotlight"><i class="far fa-circle-dot"></i> @T("admin.mahjar.homeslides.fields.picture.size.spotlight")</div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="MobilePictureId" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="MobilePictureId" />
+            <span asp-validation-for="MobilePictureId"></span>
+            <div class="mhgr-hs-size" data-layout-hint="fullbleed"><i class="fas fa-mobile-screen"></i> @T("admin.mahjar.homeslides.fields.mobilepicture.size")</div>
+            <div class="mhgr-hs-size" data-layout-hint="spotlight"><i class="fas fa-mobile-screen"></i> @T("admin.mahjar.homeslides.fields.mobilepicture.size.spotlight")</div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="LayoutId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="LayoutId" asp-items="Model.AvailableLayouts" />
+            <span asp-validation-for="LayoutId"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ContentPositionId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="ContentPositionId" asp-items="Model.AvailableContentPositions" />
+            <span asp-validation-for="ContentPositionId"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="OverlayOpacity" />
+        </div>
+        <div class="col-md-9">
+            @* a slider, not a number box: 0..90 in steps of 5, with the value read out beside it. Under spotlight it
+               is only hidden (never disabled), so the value is still posted and survives switching back *@
+            <div class="mhgr-hs-range" data-layout-hint="fullbleed">
+                <input asp-for="OverlayOpacity" type="range" min="0" max="90" step="5" class="custom-range" />
+                <output id="homeslide-overlay-value" for="@Html.IdFor(model => model.OverlayOpacity)" dir="ltr">@(Model.OverlayOpacity)%</output>
+            </div>
+            <div class="mhgr-hs-note" data-layout-hint="spotlight"><i class="fas fa-circle-info"></i> @T("admin.mahjar.homeslides.fields.overlayopacity.spotlightnote")</div>
+            <span asp-validation-for="OverlayOpacity"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="homeslide-video-row">
+        <div class="col-md-3">
+            <nop-label asp-for="VideoUrl" />
+        </div>
+        <div class="col-md-9">
+            <input asp-for="VideoUrl" type="text" class="form-control" dir="ltr" placeholder="https://…/hero.mp4" />
+            <span asp-validation-for="VideoUrl"></span>
+            <div id="homeslide-video-note" class="mhgr-hs-note mhgr-hs-note--warn d-none"><i class="fas fa-triangle-exclamation"></i> @T("admin.mahjar.homeslides.fields.videourl.notapplicable")</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        var $layout = $('#@Html.IdFor(model => model.LayoutId)');
+        var $placement = $('#@Html.IdFor(model => model.PlacementId)');
+        var $video = $('#@Html.IdFor(model => model.VideoUrl)');
+        var heroPlacement = '@((int)HomeSlidePlacement.Hero)';
+
+        //what applies to the chosen layout (and, for the video, to the placement)
+        function toggleLayoutRows() {
+            var isSpotlight = $layout.val() === '@spotlight';
+            $('[data-layout-hint="fullbleed"]').toggleClass('d-none', isSpotlight);
+            $('[data-layout-hint="spotlight"]').toggleClass('d-none', !isSpotlight);
+
+            //the video plays only in a full-bleed hero: elsewhere the row goes away, unless it holds a link the
+            //store would silently drop, which then stays in view with a warning
+            var videoPlays = !isSpotlight && $placement.val() === heroPlacement;
+            var hasVideo = ($video.val() || '').trim() !== '';
+            $('#homeslide-video-row').toggleClass('d-none', !videoPlays && !hasVideo);
+            $('#homeslide-video-note').toggleClass('d-none', videoPlays || !hasVideo);
+        }
+
+        $layout.on('change', toggleLayoutRows);
+        $placement.on('change', toggleLayoutRows);
+        $video.on('input change', toggleLayoutRows);
+        toggleLayoutRows();
+    });
+</script>

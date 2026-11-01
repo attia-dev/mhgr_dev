@@ -1,0 +1,160 @@
+@* [Mahjar partner-request] one application: everything that was submitted, the agreement that was accepted,
+    and the decision *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model PartnerRequestModel
+
+@{
+    ViewBag.PageTitle = T("Admin.Mahjar.PartnerRequests.Review").Text;
+    NopHtml.SetActiveMenuItemSystemName("Mahjar partner requests");
+}
+
+@{
+    void Row(string label, string value)
+    {
+        <div class="form-group row">
+            <div class="col-md-3">
+                <div class="label-wrapper"><label class="col-form-label">@label</label></div>
+            </div>
+            <div class="col-md-9">
+                <div class="form-text-row">@(string.IsNullOrWhiteSpace(value) ? "—" : value)</div>
+            </div>
+        </div>
+    }
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Admin.Mahjar.PartnerRequests.Review")
+        <small><i class="fas fa-arrow-left"></i>@Html.ActionLink(T("Admin.Mahjar.PartnerRequests").Text, "List")</small>
+    </h1>
+    <div class="float-right">
+        @if (Model.HasAgreementBody)
+        {
+            <a class="btn btn-info" href="@Url.Action("Agreement", "PartnerRequest", new { id = Model.Id })" target="_blank">
+                <i class="far fa-file-lines"></i>
+                @T("Admin.Mahjar.PartnerRequests.Review.OpenAgreement")
+            </a>
+        }
+        <a class="btn btn-secondary" href="@Url.Action("Edit", "Vendor", new { id = Model.Id })">
+            <i class="fas fa-up-right-from-square"></i>
+            @T("Admin.Mahjar.PartnerRequests.Review.OpenPartner")
+        </a>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+
+                <div class="card card-default">
+                    <div class="card-header">@T("Admin.Mahjar.PartnerRequests.Review.Identity")</div>
+                    <div class="card-body">
+                        @{
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.Status").Text, Model.StatusName);
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.Name").Text, Model.Name);
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.Email").Text, Model.Email);
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.VendorType").Text, Model.VendorTypeName);
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.Services").Text, Model.ActivatedServicesName);
+                            Row(T("Admin.Vendors.Fields.NationalId").Text, Model.NationalId);
+                            Row(T("Admin.Vendors.Fields.CommercialRegistrationNumber").Text, Model.CommercialRegistrationNumber);
+                            Row(T("Admin.Vendors.Fields.VatNumber").Text, Model.VatNumber);
+                            Row(T("Admin.Vendors.Fields.AuthorizedSignatoryName").Text, Model.AuthorizedSignatoryName);
+                            Row(T("Admin.Vendors.Fields.AuthorizedSignatoryCapacity").Text, Model.AuthorizedSignatoryCapacity);
+                        }
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <div class="label-wrapper"><label class="col-form-label">@T("Admin.Mahjar.PartnerRequests.Fields.Customer")</label></div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-text-row">
+                                    @if (Model.CustomerId > 0)
+                                    {
+                                        <a href="@Url.Action("Edit", "Customer", new { id = Model.CustomerId })">@(string.IsNullOrEmpty(Model.CustomerEmail) ? Model.CustomerId.ToString() : Model.CustomerEmail)</a>
+                                    }
+                                    else
+                                    {
+                                        <text>—</text>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        @{
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.Description").Text, Model.Description);
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.SubmittedOn").Text, Model.SubmittedOnUtc?.ToString("F"));
+                            Row(T("Admin.Mahjar.PartnerRequests.Fields.ReviewedOn").Text, Model.ReviewedOnUtc?.ToString("F"));
+                            if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+                            {
+                                Row(T("Admin.Mahjar.PartnerRequests.Fields.RejectionReason").Text, Model.RejectionReason);
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-header">@T("Admin.Mahjar.PartnerRequests.Review.Agreement")</div>
+                    <div class="card-body">
+                        <p class="text-muted">@T("Admin.Mahjar.PartnerRequests.Review.Agreement.Hint")</p>
+                        @if (Model.HasAgreementBody)
+                        {
+                            Row(T("Admin.Vendors.Fields.AgreementDocument").Text, Model.AgreementDocumentName);
+                            Row(T("Admin.Vendors.Fields.AgreementVersion").Text, Model.AgreementVersion);
+                            Row(T("Admin.Vendors.Fields.AgreementAcceptedOn").Text, Model.AgreementAcceptedOnUtc?.ToString("F"));
+                            Row(T("Admin.Vendors.Fields.AgreementAcceptanceMethod").Text, Model.AgreementAcceptanceMethod);
+                            Row(T("Admin.Vendors.Fields.AgreementAcceptedIp").Text, Model.AgreementAcceptedIp);
+                            Row(T("Admin.Vendors.Fields.AgreementTechnicalRef").Text, Model.AgreementTechnicalRef);
+                            Row(T("Admin.Vendors.Fields.AgreementBodyHash").Text, Model.AgreementBodyHash);
+                            <div class="form-group row">
+                                <div class="col-md-3"></div>
+                                <div class="col-md-9">
+                                    <iframe src="@Url.Action("Agreement", "PartnerRequest", new { id = Model.Id })"
+                                            style="width:100%;height:520px;border:1px solid rgba(0,0,0,.15);border-radius:4px;background:#fff"
+                                            title="@T("Admin.Mahjar.PartnerRequests.Review.Agreement")"></iframe>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-text-row">@T("Admin.Mahjar.PartnerRequests.Review.NoAgreement")</div>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.CanReview)
+                {
+                    <div class="card card-default">
+                        <div class="card-header">@T("Admin.Mahjar.PartnerRequests.Review")</div>
+                        <div class="card-body">
+                            <form asp-controller="PartnerRequest" asp-action="Approve" asp-route-id="@Model.Id" method="post"
+                                  onsubmit="return confirm('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Mahjar.PartnerRequests.Approve.Confirm").Text))');">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="far fa-circle-check"></i>
+                                    @T("Admin.Mahjar.PartnerRequests.Approve")
+                                </button>
+                            </form>
+
+                            <hr />
+
+                            <form asp-controller="PartnerRequest" asp-action="Reject" asp-route-id="@Model.Id" method="post"
+                                  onsubmit="return confirm('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Admin.Mahjar.PartnerRequests.Reject.Confirm").Text))');">
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <div class="label-wrapper"><label class="col-form-label">@T("Admin.Mahjar.PartnerRequests.Fields.RejectionReason")</label></div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <textarea name="rejectionReason" class="form-control" rows="3" maxlength="1000"></textarea>
+                                        <div class="form-text text-muted">@T("Admin.Mahjar.PartnerRequests.Fields.RejectionReason.Hint")</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="far fa-circle-xmark"></i>
+                                    @T("Admin.Mahjar.PartnerRequests.Reject")
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

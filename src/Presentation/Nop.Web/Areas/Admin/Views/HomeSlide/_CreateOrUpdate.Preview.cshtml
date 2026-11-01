@@ -1,0 +1,366 @@
+@* [Mahjar home-slides] the live preview: the slide drawn roughly as the store draws it (full bleed: the photo under a
+   legibility gradient; spotlight: the picture inside a round cream display plate, faded at its edges, over the brand
+   backdrop), with the text side, the overlay darkness and one language's texts (the admin's own language when that
+   tab has a title, then whichever tab is clicked), redrawn as the form changes. Plus the form's own styles. *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    var workingLanguageId = (await workContext.GetWorkingLanguageAsync()).Id;
+}
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Playfair+Display:wght@500;700&display=swap" />
+<style>
+    /* the form helpers */
+    .mhgr-hs-help { font-size: .88rem; margin-bottom: .75rem; }
+    /* each text box reads in its own text's direction: an English title typed in the Arabic admin keeps its full stop
+       at its end (it jumped to the start in a right-to-left box) */
+    #homeslide-content input.form-control, #homeslide-content textarea.form-control { unicode-bidi: plaintext; }
+    .mhgr-hs-help i, .mhgr-hs-note i, .mhgr-hs-size i { color: #B08D57; margin-inline-end: .3rem; }
+    .mhgr-hs-size { font-size: .82rem; color: #6E635E; margin-top: .4rem; line-height: 1.6; }
+    .mhgr-hs-note { font-size: .82rem; color: #6E635E; margin-top: .45rem; background: #F4F1EB; border-radius: 6px; padding: .4rem .6rem; line-height: 1.6; }
+    .mhgr-hs-note--warn { background: #FBF0E2; color: #7A4B14; }
+    .mhgr-hs-note--warn i { color: #B86B16; }
+    .mhgr-hs-na { display: flex; align-items: center; gap: .55rem; font-size: .85rem; color: #8a7f79; min-height: calc(2.25rem + 2px); }
+    .mhgr-hs-na input { margin: 0; opacity: .6; }
+    .mhgr-hs-range { display: flex; align-items: center; gap: .9rem; max-width: 420px; }
+    .mhgr-hs-range output { min-width: 3.2rem; text-align: center; font-weight: 700; color: #3A2A26; background: #F4F1EB;
+        border: 1px solid #E2DBD2; border-radius: 999px; padding: .1rem .5rem; font-size: .85rem; }
+    .mhgr-hs-product { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .mhgr-hs-product__search { flex: 1 1 260px; }
+    .mhgr-hs-product__id { flex: 0 0 210px; }
+    .mhgr-hs-echo { margin-top: .45rem; font-size: .85rem; }
+    .mhgr-hs-echo.is-found { color: #2e7d4f; }
+    .mhgr-hs-echo.is-missing { color: #b3261e; }
+    .mhgr-hs-echo a { margin-inline-start: .6rem; font-size: .8rem; }
+
+    /* the preview card */
+    .mhgr-hs-preview-card { position: sticky; top: 70px; }
+    .mhgr-hs-preview-card .card-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .mhgr-hs-preview-card .card-title { font-size: 1rem; margin: 0; }
+    .mhgr-hs-preview-card .card-title i { color: #B08D57; margin-inline-end: .35rem; }
+    .mhgr-hs-device .btn { font-size: .78rem; padding: .2rem .6rem; }
+    .mhgr-hs-device .btn.active { background: #3A2A26; border-color: #3A2A26; color: #F4F1EB; }
+
+    /* the slide, drawn to scale (the web hero as a 1440×900 screen shows it, 1440×690; the app card is 0.64 as tall as it
+       is wide); text sizes follow its width, as the store's follow the screen width */
+    .mhgr-hs-preview { --obj-x: 70%; --obj-y: 50%; --plate: 34cqw;
+        position: relative; overflow: hidden; border-radius: 14px; aspect-ratio: 1440 / 690;
+        container-type: inline-size; color: #fff; margin: 0 auto; box-shadow: 0 10px 30px rgba(31, 27, 26, .18);
+        background: radial-gradient(120% 140% at 70% 45%, #4a3630 0%, #241717 52%, #1F1B1A 100%);
+        font-family: 'Playfair Display', Georgia, serif; }
+    .mhgr-hs-preview[data-device="app"] { aspect-ratio: 25 / 16; max-width: 320px; border-radius: 18px; }
+    .mhgr-hs-preview__ring { position: absolute; width: 70cqw; height: 70cqw; border-radius: 50%; top: -18cqw; inset-inline-start: -22cqw;
+        border: 1px solid rgba(176, 141, 87, .22); pointer-events: none; }
+    .mhgr-hs-preview__media { position: absolute; inset: 0; }
+    .mhgr-hs-preview__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mhgr-hs-preview__stage { display: none; position: absolute; inset: 0; pointer-events: none; }
+    .mhgr-hs-preview__shade { position: absolute; inset: 0; pointer-events: none; }
+    /* no picture yet: a quiet pill at the foot of the slide, clear of the text block */
+    .mhgr-hs-preview__empty { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .4rem;
+        white-space: nowrap; color: rgba(223, 223, 219, .8); background: rgba(20, 14, 12, .55); border: 1px dashed rgba(223, 223, 219, .35);
+        border-radius: 999px; padding: .2rem .7rem; font-size: .72rem; z-index: 3; }
+    .mhgr-hs-preview__empty i { font-size: .85rem; color: #CDAE7C; }
+    .mhgr-hs-preview__content { position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: 58%; padding: 5cqw 6cqw;
+        display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: start; z-index: 2; }
+    .mhgr-hs-preview__content > * { flex-shrink: 0; }
+    .mhgr-hs-preview[data-position="end"] .mhgr-hs-preview__content { inset-inline-start: auto; inset-inline-end: 0; }
+    .mhgr-hs-preview[data-position="center"] .mhgr-hs-preview__content { width: 100%; align-items: center; text-align: center; }
+    .mhgr-hs-preview__kicker { font-size: clamp(7px, 2.1cqw, 13px); letter-spacing: .18em; text-transform: uppercase; color: #CDAE7C; margin-bottom: 1.2cqw; }
+    .mhgr-hs-preview__title { font-size: clamp(12px, 4.7cqw, 40px); line-height: 1.12; font-weight: 700; color: #F4F1EB;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, .35); }
+    .mhgr-hs-preview__title.is-placeholder { opacity: .45; font-style: italic; }
+    .mhgr-hs-preview__subtitle { font-size: clamp(8px, 2.4cqw, 16px); line-height: 1.6; color: #DFDFDB; margin-top: 1.4cqw; max-width: 42em;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .mhgr-hs-preview__button { display: inline-block; margin-top: 2.6cqw; padding: 1.1cqw 3.4cqw; border-radius: 999px; background: #DFDFDB;
+        color: #1F1B1A; font-size: clamp(7px, 2.1cqw, 14px); font-weight: 700; }
+    .mhgr-hs-preview[dir="rtl"] .mhgr-hs-preview__title { font-family: 'Aref Ruqaa', 'Amiri', serif; font-size: clamp(13px, 4.9cqw, 42px); line-height: 1.32; }
+    .mhgr-hs-preview[dir="rtl"] .mhgr-hs-preview__kicker { letter-spacing: 0; font-family: 'Amiri', serif; font-size: clamp(8px, 2.5cqw, 15px); }
+    .mhgr-hs-preview[dir="rtl"] .mhgr-hs-preview__subtitle,
+    .mhgr-hs-preview[dir="rtl"] .mhgr-hs-preview__button { font-family: 'Amiri', serif; }
+    .mhgr-hs-preview[data-device="app"] .mhgr-hs-preview__content { width: 78%; padding: 7cqw 8cqw; }
+    .mhgr-hs-preview[data-device="app"][data-position="center"] .mhgr-hs-preview__content { width: 100%; }
+
+    /* spotlight, as the store draws it: the brand backdrop lit at the piece, and the picture inside a round cream plate —
+       shown whole (contain), multiplied into the cream and faded out towards the rim. A wide photo therefore shows as a
+       thin, faded strip across the circle: exactly what the store would show. The app crops the picture to the circle. */
+    .mhgr-hs-preview[data-layout="spotlight"] {
+        background: radial-gradient(60% 75% at var(--obj-x) 46%, #3b2623 0%, rgba(36, 23, 23, 0) 70%),
+            linear-gradient(118deg, #1c1514 0%, #241717 46%, #1F1B1A 72%, #141010 100%); }
+    .mhgr-hs-preview[data-layout="spotlight"] .mhgr-hs-preview__media,
+    .mhgr-hs-preview[data-layout="spotlight"] .mhgr-hs-preview__ring { display: none; }
+    .mhgr-hs-preview[data-layout="spotlight"] .mhgr-hs-preview__stage { display: block; }
+    .mhgr-hs-preview[data-layout="spotlight"][data-position="center"] { --plate: 24cqw; --obj-y: 34%; }
+    .mhgr-hs-preview[data-layout="spotlight"][data-device="app"] { --plate: 37cqw; --obj-y: 50%; }
+    .mhgr-hs-preview__glow { position: absolute; left: var(--obj-x); top: var(--obj-y); width: calc(var(--plate) * 2.1); height: calc(var(--plate) * 2.1);
+        transform: translate(-50%, -50%); border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(176, 141, 87, .22), rgba(176, 141, 87, .07) 55%, rgba(176, 141, 87, 0) 100%); }
+    .mhgr-hs-preview__obj { position: absolute; left: var(--obj-x); top: var(--obj-y); width: var(--plate); height: var(--plate); transform: translate(-50%, -50%); }
+    .mhgr-hs-preview__dial { position: absolute; inset: -16%; border-radius: 50%; border: 1px solid rgba(223, 223, 219, .16); }
+    .mhgr-hs-preview__dial::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; border: 1px dashed rgba(176, 141, 87, .32); }
+    .mhgr-hs-preview__shadow { position: absolute; left: 10%; right: 10%; bottom: -9%; height: 16%; border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(0, 0, 0, .62), rgba(0, 0, 0, 0)); filter: blur(4px); }
+    .mhgr-hs-preview__plate { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+        background: radial-gradient(circle at 50% 26%, #F3EEE6 0%, #E7DFD3 44%, #D9CEBF 76%, #C4B6A4 100%);
+        box-shadow: 0 0 0 1px rgba(176, 141, 87, .38), 0 0 0 1.4cqw rgba(244, 241, 235, .035),
+            inset 0 2px 1px rgba(255, 255, 255, .8), inset 0 -3cqw 5cqw rgba(58, 42, 38, .2); }
+    .mhgr-hs-preview__plate::after { content: ""; position: absolute; inset: 4.5%; border-radius: 50%; border: 1px solid rgba(176, 141, 87, .42); }
+    .mhgr-hs-preview__float { position: absolute; inset: -5%; mix-blend-mode: multiply; }
+    .mhgr-hs-preview__watch { display: block; width: 100%; height: 100%; object-fit: contain;
+        -webkit-mask-image: radial-gradient(closest-side, #000 62%, rgba(0, 0, 0, .4) 72%, rgba(0, 0, 0, 0) 82%);
+        mask-image: radial-gradient(closest-side, #000 62%, rgba(0, 0, 0, .4) 72%, rgba(0, 0, 0, 0) 82%); }
+    .mhgr-hs-preview[data-device="app"] .mhgr-hs-preview__plate { box-shadow: 0 0 0 2px #B08D57; }
+    .mhgr-hs-preview[data-device="app"] .mhgr-hs-preview__plate::after { display: none; }
+    .mhgr-hs-preview[data-device="app"] .mhgr-hs-preview__float { inset: 0; mix-blend-mode: normal; }
+    .mhgr-hs-preview[data-device="app"] .mhgr-hs-preview__watch { object-fit: cover; -webkit-mask-image: none; mask-image: none; }
+    /* the text keeps its own side of the slide, clear of the plate */
+    .mhgr-hs-preview[data-layout="spotlight"] .mhgr-hs-preview__content { width: 54%; }
+    .mhgr-hs-preview[data-layout="spotlight"][data-device="app"] .mhgr-hs-preview__content { width: 56%; padding-inline-start: 6cqw; padding-inline-end: 3cqw; }
+    .mhgr-hs-preview[data-layout="spotlight"][data-position="center"] .mhgr-hs-preview__content { width: 100%; justify-content: flex-end; padding-bottom: 3cqw; }
+    .mhgr-hs-preview[data-layout="spotlight"][data-position="center"] .mhgr-hs-preview__subtitle { display: none !important; }
+
+    /* where it shows */
+    .mhgr-hs-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .9rem; }
+    .mhgr-hs-chip { font-size: .75rem; border-radius: 999px; padding: .15rem .6rem; border: 1px solid #E2DBD2; color: #6E635E; background: #fff; }
+    .mhgr-hs-chip i { margin-inline-end: .25rem; }
+    .mhgr-hs-chip.is-on { background: #F4F1EB; color: #3A2A26; border-color: #CAC5C1; }
+    .mhgr-hs-chip.is-off { text-decoration: line-through; opacity: .6; }
+    .mhgr-hs-chip--lang { background: #3A2A26; border-color: #3A2A26; color: #F4F1EB; }
+    .mhgr-hs-chip--lang i { color: #CDAE7C; }
+    .mhgr-hs-preview-link { font-size: .82rem; color: #6E635E; margin-top: .6rem; word-break: break-word; }
+    .mhgr-hs-preview-link i { color: #B08D57; margin-inline-end: .3rem; }
+    .mhgr-hs-preview-hint { font-size: .78rem; color: #8a7f79; margin: .6rem 0 0; }
+</style>
+
+<div class="card card-default mhgr-hs-preview-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="far fa-eye"></i>@T("admin.mahjar.homeslides.card.preview")</h3>
+        <div class="btn-group btn-group-sm mhgr-hs-device" role="group">
+            <button type="button" class="btn btn-default active" data-device="web"><i class="fas fa-desktop"></i> @T("admin.mahjar.homeslides.grid.web")</button>
+            <button type="button" class="btn btn-default" data-device="app"><i class="fas fa-mobile-screen"></i> @T("admin.mahjar.homeslides.grid.app")</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="homeslide-preview" class="mhgr-hs-preview" data-layout="fullbleed" data-position="start" data-device="web">
+            <span class="mhgr-hs-preview__ring"></span>
+            <div class="mhgr-hs-preview__media">
+                <img class="mhgr-hs-preview__img" alt="" src="@Model.PicturePreviewUrl" />
+            </div>
+            <div class="mhgr-hs-preview__stage">
+                <span class="mhgr-hs-preview__glow"></span>
+                <div class="mhgr-hs-preview__obj">
+                    <span class="mhgr-hs-preview__dial"></span>
+                    <span class="mhgr-hs-preview__shadow"></span>
+                    <div class="mhgr-hs-preview__plate">
+                        <div class="mhgr-hs-preview__float">
+                            <img class="mhgr-hs-preview__watch" alt="" src="@Model.PicturePreviewUrl" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mhgr-hs-preview__shade"></div>
+            <div class="mhgr-hs-preview__empty"><i class="far fa-image"></i>@T("admin.mahjar.homeslides.preview.nopicture")</div>
+            <div class="mhgr-hs-preview__content">
+                <div class="mhgr-hs-preview__kicker"></div>
+                <div class="mhgr-hs-preview__title"></div>
+                <div class="mhgr-hs-preview__subtitle"></div>
+                <span class="mhgr-hs-preview__button"></span>
+            </div>
+        </div>
+        <div class="mhgr-hs-chips">
+            <span class="mhgr-hs-chip mhgr-hs-chip--lang d-none" id="homeslide-chip-lang" title="@T("admin.mahjar.homeslides.preview.language")"><i class="fas fa-language"></i><span></span></span>
+            <span class="mhgr-hs-chip is-on" id="homeslide-chip-placement"><i class="fas fa-location-dot"></i><span></span></span>
+            <span class="mhgr-hs-chip" id="homeslide-chip-web"><i class="fas fa-desktop"></i>@T("admin.mahjar.homeslides.grid.web")</span>
+            <span class="mhgr-hs-chip" id="homeslide-chip-app"><i class="fas fa-mobile-screen"></i>@T("admin.mahjar.homeslides.grid.app")</span>
+            <span class="mhgr-hs-chip" id="homeslide-chip-published"><i class="fas fa-eye"></i>@T("admin.mahjar.homeslides.fields.published")</span>
+        </div>
+        <div class="mhgr-hs-preview-link"><i class="fas fa-link"></i><span id="homeslide-preview-link"></span></div>
+        <p class="mhgr-hs-preview-hint">@T("admin.mahjar.homeslides.preview.hint")</p>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        var $preview = $('#homeslide-preview');
+        var $imgs = $preview.find('.mhgr-hs-preview__img, .mhgr-hs-preview__watch');
+        var $empty = $preview.find('.mhgr-hs-preview__empty');
+        var $shade = $preview.find('.mhgr-hs-preview__shade');
+        var placeholderTitle = @Html.Raw(Json.Serialize(T("admin.mahjar.homeslides.preview.untitled").Text));
+        var pictureInputs = { main: '#@Html.IdFor(model => model.PictureId)', mobile: '#@Html.IdFor(model => model.MobilePictureId)' };
+        var pictureIds = { main: $(pictureInputs.main).val(), mobile: $(pictureInputs.mobile).val() };
+        var pictureUrls = { main: @Html.Raw(Json.Serialize(Model.PicturePreviewUrl ?? string.Empty)), mobile: @Html.Raw(Json.Serialize(Model.MobilePicturePreviewUrl ?? string.Empty)) };
+        var device = 'web';
+        var positions = { '@((int)Nop.Core.Domain.Mahjar.HomeSlideContentPosition.Start)': 'start', '@((int)Nop.Core.Domain.Mahjar.HomeSlideContentPosition.Center)': 'center', '@((int)Nop.Core.Domain.Mahjar.HomeSlideContentPosition.End)': 'end' };
+        var spotlight = '@((int)Nop.Core.Domain.Mahjar.HomeSlideLayout.Spotlight)';
+        var hero = '@((int)Nop.Core.Domain.Mahjar.HomeSlidePlacement.Hero)';
+        var noLink = '@((int)Nop.Core.Domain.Mahjar.HomeSlideTargetType.None)';
+        var rentModeTag = @Html.Raw(Json.Serialize(T("admin.mahjar.homeslides.fields.targetrentmode.tag").Text));
+
+        //which language tab the preview shows: the admin's own language when that tab has a title (customers see the
+        //slide in that language, the Standard tab being only its fallback), else the open tab; a clicked tab wins
+        var standardPane = 'homeslide-localized-standard-tab';
+        var workingPane = 'homeslide-localized-@(workingLanguageId)-tab';
+        var previewPane = null;
+        if ((($('#' + workingPane).find('[id$="__Title"]').val()) || '').trim()) {
+            previewPane = workingPane;
+        }
+        function currentPane() {
+            return previewPane || $('#homeslide-localized .tab-pane.active').attr('id') || standardPane;
+        }
+
+        //a text of the previewed language tab, falling back to the Standard tab per field — as the store does
+        function text(name) {
+            var standard = ($('#' + name).val() || '').trim();
+            var pane = currentPane();
+            if (pane !== standardPane) {
+                var localized = ($('#' + pane).find('[id$="__' + name + '"]').val() || '').trim();
+                if (localized) {
+                    return localized;
+                }
+            }
+            return standard;
+        }
+
+        function isRtl(value) {
+            return /[֐-ࣿיִ-﷿ﹰ-ﻼ]/.test(value);
+        }
+
+        function selectedText(selector) {
+            var $option = $(selector + ' option:selected');
+            return $option.length && $option.val() !== '0' ? $option.text() : '';
+        }
+
+        //"Link to: what", from whichever link input is active
+        function linkSummary() {
+            var type = $('#@Html.IdFor(model => model.TargetTypeId)').val();
+            var kind = $('#@Html.IdFor(model => model.TargetTypeId) option:selected').text();
+            var what = '';
+            switch (type) {
+                case '10':
+                    what = $('#homeslide-product-echo').hasClass('is-found') ? $('#homeslide-product-echo .mhgr-hs-echo__text').text() : '';
+                    //opened with Rent already chosen
+                    if (what && $('#@Html.IdFor(model => model.TargetProductRentMode)').is(':checked')) {
+                        what += ' ' + rentModeTag;
+                    }
+                    break;
+                case '20': what = selectedText('#@Html.IdFor(model => model.TargetCategoryId)'); break;
+                case '30': what = selectedText('#@Html.IdFor(model => model.TargetManufacturerId)'); break;
+                case '40': what = selectedText('#@Html.IdFor(model => model.TargetVendorId)'); break;
+                case '50': what = ($('#@Html.IdFor(model => model.TargetSearch)').val() || '').trim(); break;
+                case '60': what = ($('#@Html.IdFor(model => model.TargetUrl)').val() || '').trim(); break;
+                default: return kind;
+            }
+            return kind + ': ' + (what || '…');
+        }
+
+        function render() {
+            var kicker = text('Kicker'), title = text('Title'), subtitle = text('Subtitle'), button = text('ButtonText');
+            var layout = $('#@Html.IdFor(model => model.LayoutId)').val() === spotlight ? 'spotlight' : 'fullbleed';
+            var position = positions[$('#@Html.IdFor(model => model.ContentPositionId)').val()] || 'start';
+            //the app's spotlight card always keeps the text on the start side and the plate on the end side
+            if (device === 'app' && layout === 'spotlight') {
+                position = 'start';
+            }
+            var overlay = Math.min(Math.max(parseInt($('#@Html.IdFor(model => model.OverlayOpacity)').val(), 10) || 0, 0), 90) / 100;
+            var hasLink = $('#@Html.IdFor(model => model.TargetTypeId)').val() !== noLink;
+            var sample = title || kicker || subtitle;
+            var dir = sample ? (isRtl(sample) ? 'rtl' : 'ltr') : (document.documentElement.getAttribute('dir') || 'ltr');
+            var textOnLeft = (position === 'start') === (dir === 'ltr');
+
+            //the piece stands opposite the text (in the middle for centred text)
+            var objectX = position === 'center' ? '50%' : device === 'app' ? (textOnLeft ? '78%' : '22%') : (textOnLeft ? '70%' : '30%');
+            $preview.attr({ 'data-layout': layout, 'data-position': position, 'data-device': device, dir: dir });
+            $preview.css('--obj-x', objectX);
+
+            $preview.find('.mhgr-hs-preview__kicker').text(kicker).toggle(!!kicker);
+            $preview.find('.mhgr-hs-preview__title').text(title || placeholderTitle).toggleClass('is-placeholder', !title);
+            $preview.find('.mhgr-hs-preview__subtitle').text(subtitle).toggle(!!subtitle);
+            //as the store: a button only shows when the slide links somewhere
+            $preview.find('.mhgr-hs-preview__button').text(button).toggle(!!button && hasLink);
+
+            //the app (and small screens) use the mobile picture when there is one
+            var url = device === 'app' ? (pictureUrls.mobile || pictureUrls.main) : pictureUrls.main;
+            if (url) {
+                $imgs.each(function () {
+                    if ($(this).attr('src') !== url) {
+                        $(this).attr('src', url);
+                    }
+                });
+                $imgs.show();
+                $empty.hide();
+            } else {
+                $imgs.hide();
+                $empty.show();
+            }
+
+            //full bleed: the legibility gradient, darkest on the text side; spotlight: the backdrop needs none
+            var shade = 'none';
+            if (layout === 'fullbleed') {
+                if (position === 'center') {
+                    shade = 'rgba(20, 14, 12, ' + (overlay * 0.8).toFixed(2) + ')';
+                } else {
+                    shade = 'linear-gradient(' + (textOnLeft ? 'to right' : 'to left') + ', rgba(20, 14, 12, ' + overlay.toFixed(2)
+                        + ') 0%, rgba(20, 14, 12, ' + (overlay * 0.55).toFixed(2) + ') 45%, rgba(20, 14, 12, 0) 85%)';
+                }
+            }
+            $shade.css('background', shade);
+
+            //which language the preview shows
+            var $tab = $('#homeslide-localized a[href="#' + currentPane() + '"]');
+            $('#homeslide-chip-lang').toggleClass('d-none', !$tab.length).find('span').text($tab.text().trim());
+
+            //where it shows
+            var placement = $('#@Html.IdFor(model => model.PlacementId)').val();
+            var onWeb = $('#@Html.IdFor(model => model.ShowOnWeb)').is(':checked');
+            var onApp = $('#@Html.IdFor(model => model.ShowOnApp)').is(':checked') && placement === hero;
+            $('#homeslide-chip-placement span').text($('#@Html.IdFor(model => model.PlacementId) option:selected').text());
+            $('#homeslide-chip-web').toggleClass('is-on', onWeb).toggleClass('is-off', !onWeb);
+            $('#homeslide-chip-app').toggleClass('is-on', onApp).toggleClass('is-off', !onApp);
+            var published = $('#@Html.IdFor(model => model.Published)').is(':checked');
+            $('#homeslide-chip-published').toggleClass('is-on', published).toggleClass('is-off', !published);
+            $('#homeslide-preview-link').text(linkSummary());
+        }
+
+        //the uploader writes the new picture id into its hidden input without an event, so watch the values
+        function watchPictures() {
+            $.each(pictureInputs, function (key, selector) {
+                var id = $(selector).val();
+                if (id === pictureIds[key]) {
+                    return;
+                }
+                pictureIds[key] = id;
+                if (!id || id === '0') {
+                    pictureUrls[key] = '';
+                    render();
+                    return;
+                }
+                $.getJSON('@Url.Action("PicturePreview", "HomeSlide")', { pictureId: id }).done(function (data) {
+                    pictureUrls[key] = data.url || '';
+                    render();
+                });
+            });
+        }
+        setInterval(watchPictures, 600);
+
+        $('.mhgr-hs-device .btn').on('click', function () {
+            device = $(this).data('device');
+            $('.mhgr-hs-device .btn').removeClass('active');
+            $(this).addClass('active');
+            render();
+        });
+
+        $('#@Html.IdFor(model => model.OverlayOpacity)').on('input change', function () {
+            $('#homeslide-overlay-value').text(this.value + '%');
+        });
+
+        $(document).on('input change', '#homeslide-cards input, #homeslide-cards select, #homeslide-cards textarea', render);
+        //a clicked language tab becomes the previewed language
+        $(document).on('shown.bs.tab', '#homeslide-localized a[data-toggle="pill"]', function () {
+            previewPane = ($(this).attr('href') || '').replace('#', '') || null;
+            render();
+        });
+        $(document).on('homeslide:changed', render);
+
+        render();
+    });
+</script>

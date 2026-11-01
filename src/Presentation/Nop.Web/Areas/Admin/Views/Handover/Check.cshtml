@@ -1,0 +1,560 @@
+@* [Mahjar handover] the condition check editor: one checkpoint of one item — photos, video, grade, notes, damage *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Services
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model ConditionCheckModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.handover.check.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Mahjar handovers");
+
+    var isReturn = Model.CheckTypeId == (int)ConditionCheckType.Return;
+    var hasVideoFile = !string.IsNullOrEmpty(Model.VideoFile);
+    var commonErrorMessage = T("Common.Error").Text;
+    var videoMissingMessage = T("Admin.Catalog.Products.ItemStatus.Alert.VideoMissing").Text;
+    var videoTooLargeMessage = string.Format(T("Admin.Catalog.Products.ItemStatus.Alert.VideoTooLarge").Text, Model.MaxVideoSizeMb);
+    var videoBadFormatMessage = string.Format(T("Admin.Catalog.Products.ItemStatus.Alert.VideoBadFormat").Text, string.Join(", ", Model.AllowedVideoExtensions));
+}
+
+<form asp-controller="Handover" asp-action="Check" method="post" id="condition-check-form">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.handover.check.title") - @Model.CheckType - @Model.ProductName
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("admin.mahjar.handover.backtolist")</a>
+            </small>
+        </h1>
+        @if (Model.IsEditable)
+        {
+            <div class="float-right">
+                @if (Model.CanConfirm)
+                {
+                    <button type="submit" name="confirm" class="btn btn-success"
+                            onclick="return confirm(@Html.Raw(Json.Serialize(T("admin.mahjar.handover.confirm.warning").Text)));">
+                        <i class="fas fa-lock"></i>
+                        @Model.ConfirmButtonText
+                    </button>
+                }
+                @if (Model.CanImportFromProduct)
+                {
+                    <button type="submit" name="import" class="btn bg-purple">
+                        <i class="far fa-clone"></i>
+                        @T("admin.mahjar.handover.buttons.importfromproduct")
+                    </button>
+                }
+                <button type="submit" name="save" class="btn btn-primary">
+                    <i class="far fa-floppy-disk"></i>
+                    @T("Admin.Common.Save")
+                </button>
+                <button type="submit" name="save-continue" class="btn btn-primary">
+                    <i class="far fa-floppy-disk"></i>
+                    @T("Admin.Common.SaveContinue")
+                </button>
+                <button type="submit" name="delete-draft" class="btn btn-danger"
+                        onclick="return confirm(@Html.Raw(Json.Serialize(T("Admin.Common.AreYouSure").Text)));">
+                    <i class="far fa-trash-can"></i>
+                    @T("admin.mahjar.handover.buttons.deletedraft")
+                </button>
+            </div>
+        }
+    </div>
+
+    <div asp-validation-summary="All"></div>
+    <input asp-for="Id" type="hidden" />
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+
+                    @* the context of the check *@
+                    <div class="card card-default">
+                        <div class="card-body">
+                            @if (!string.IsNullOrEmpty(Model.Hint))
+                            {
+                                <div class="alert alert-info">@Model.Hint</div>
+                            }
+                            @if (!Model.IsEditable)
+                            {
+                                <div class="alert alert-success"><i class="fas fa-lock"></i> @T("admin.mahjar.handover.locked")</div>
+                            }
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="CheckType" /></div>
+                                <div class="col-md-9"><div class="form-text-row">@Model.CheckType</div></div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="Status" /></div>
+                                <div class="col-md-9"><div class="form-text-row">@Model.Status</div></div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="ProductName" /></div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">
+                                        @Model.ProductName
+                                        @if (!string.IsNullOrEmpty(Model.ProductSku))
+                                        {
+                                            <small>(@Model.ProductSku)</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(Model.VendorName))
+                                        {
+                                            <div><small>@Model.VendorName</small></div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.Reference))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="Reference" /></div>
+                                    <div class="col-md-9">
+                                        <div class="form-text-row">
+                                            @if (Model.ContractRequestId > 0)
+                                            {
+                                                <a asp-controller="ContractRequest" asp-action="Edit" asp-route-id="@Model.ContractRequestId">@Model.ContractNumber</a>
+                                            }
+                                            @if (Model.OrderId > 0)
+                                            {
+                                                <span>@(Model.ContractRequestId > 0 ? " · " : "")@string.Format(T("admin.mahjar.handover.order").Text, Model.OrderNumber)</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.CustomerInfo))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="CustomerInfo" /></div>
+                                    <div class="col-md-9"><div class="form-text-row">@Model.CustomerInfo</div></div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Period))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="Period" /></div>
+                                    <div class="col-md-9"><div class="form-text-row">@Model.Period</div></div>
+                                </div>
+                            }
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="CreatedBy" /></div>
+                                <div class="col-md-9"><div class="form-text-row">@Model.CreatedBy - @Model.CreatedOn.ToString("g")</div></div>
+                            </div>
+                            @if (Model.ConfirmedOn.HasValue)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="ConfirmedBy" /></div>
+                                    <div class="col-md-9"><div class="form-text-row">@Model.ConfirmedBy - @Model.ConfirmedOn.Value.ToString("g")</div></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* the photos *@
+                    <div class="card card-default">
+                        <div class="card-header">@T("admin.mahjar.handover.photos")</div>
+                        <div class="card-body">
+                            @{
+                                var photoColumns = new List<ColumnProperty>
+                                {
+                                    new ColumnProperty(nameof(ConditionCheckPictureModel.PictureUrl))
+                                    {
+                                        Title = T("admin.mahjar.handover.fields.photo").Text,
+                                        Render = new RenderCustom("renderConditionPhoto"),
+                                        ClassName = "text-center preview",
+                                        Width = "150"
+                                    },
+                                    new ColumnProperty(nameof(ConditionCheckPictureModel.Caption))
+                                    {
+                                        Title = T("admin.mahjar.handover.fields.caption").Text,
+                                        Width = "400",
+                                        Editable = Model.IsEditable,
+                                        EditType = EditType.String
+                                    },
+                                    new ColumnProperty(nameof(ConditionCheckPictureModel.DisplayOrder))
+                                    {
+                                        Title = T("admin.mahjar.handover.fields.displayorder").Text,
+                                        Width = "150",
+                                        ClassName = NopColumnClassDefaults.CenterAll,
+                                        Editable = Model.IsEditable,
+                                        EditType = EditType.Number
+                                    }
+                                };
+                                if (Model.IsEditable)
+                                {
+                                    photoColumns.Add(new ColumnProperty(nameof(ConditionCheckPictureModel.Id))
+                                    {
+                                        Title = T("Admin.Common.Edit").Text,
+                                        Width = "200",
+                                        ClassName = NopColumnClassDefaults.Button,
+                                        Render = new RenderButtonsInlineEdit()
+                                    });
+                                    photoColumns.Add(new ColumnProperty(nameof(ConditionCheckPictureModel.Id))
+                                    {
+                                        Title = T("Admin.Common.Delete").Text,
+                                        Width = "100",
+                                        Render = new RenderButtonRemove(T("Admin.Common.Delete").Text),
+                                        ClassName = NopColumnClassDefaults.Button
+                                    });
+                                }
+                            }
+                            @await Html.PartialAsync("Table", new DataTablesModel
+                            {
+                                Name = "conditioncheckphotos-grid",
+                                UrlRead = new DataUrl("CheckPhotoList", "Handover", new RouteValueDictionary { [nameof(Model.PictureSearchModel.ConditionCheckId)] = Model.PictureSearchModel.ConditionCheckId }),
+                                UrlDelete = Model.IsEditable ? new DataUrl("CheckPhotoDelete", "Handover", null) : null,
+                                UrlUpdate = Model.IsEditable ? new DataUrl("CheckPhotoUpdate", "Handover", null) : null,
+                                Length = Model.PictureSearchModel.PageSize,
+                                LengthMenu = Model.PictureSearchModel.AvailablePageSizes,
+                                ColumnCollection = photoColumns
+                            })
+
+                            <script>
+                                function renderConditionPhoto(data, type, row, meta) {
+                                    return '<a href="' + row.FullSizeUrl + '" target="_blank"><img alt="' + row.PictureId + '" src="' + row.PictureUrl + '" /></a>';
+                                }
+                            </script>
+
+                            @if (Model.IsEditable)
+                            {
+                                <div class="card card-default">
+                                    <div class="card-header">@T("admin.mahjar.handover.photos.addnew")</div>
+                                    <div class="card-body">
+                                        <div class="form-group row">
+                                            @{
+                                                //the ONLY wiring of the MultiPicture uploader; read the moment the editor below renders
+                                                ViewData["Endpoint"] = this.Url.Action("CheckPhotoAdd", "Handover", new { checkId = Model.Id });
+                                                ViewData["TableSelector"] = "#conditioncheckphotos-grid";
+                                            }
+                                            <div class="col-md-3">
+                                                <nop-label asp-for="AddPictureModel.PictureId" />
+                                            </div>
+                                            <div class="col-md-9">
+                                                <nop-editor asp-for="AddPictureModel.PictureId" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* the video *@
+                    <div class="card card-default">
+                        <div class="card-header">@T("admin.mahjar.handover.video")</div>
+                        <div class="card-body">
+                            <div class="form-group row @(hasVideoFile ? null : "d-none")" id="condition-video-current">
+                                <div class="col-md-9 offset-md-3">
+                                    <video id="condition-video-player" controls preload="metadata" style="max-width: 100%" src="@Model.VideoFile">
+                                        @T("Mahjar.ItemStatus.VideoUnsupported")
+                                    </video>
+                                    @if (Model.IsEditable)
+                                    {
+                                        <div class="mt-2">
+                                            <button type="button" id="removeConditionVideo" class="btn btn-danger">
+                                                <i class="far fa-trash-can"></i>
+                                                @T("admin.mahjar.handover.video.remove")
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row @(hasVideoFile ? "d-none" : null)" id="condition-video-none">
+                                <div class="col-md-9 offset-md-3">
+                                    <em>@T("admin.mahjar.handover.video.none")</em>
+                                </div>
+                            </div>
+                            @if (Model.IsEditable)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <div class="label-wrapper">
+                                            <label class="col-form-label">@T("admin.mahjar.handover.video.upload")</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        @* deliberately nameless: a 100 MB file must never travel with the check form *@
+                                        <input type="file" id="condition-video-input" class="form-control" accept="video/*" capture="environment" />
+                                        <div class="progress mt-2 d-none" id="condition-video-progress" style="height: 20px">
+                                            <div class="progress-bar bg-primary" id="condition-video-progress-bar" role="progressbar" style="width: 0%">0%</div>
+                                        </div>
+                                        <button type="button" id="uploadConditionVideo" class="btn btn-primary mt-2">
+                                            <i class="fas fa-upload"></i>
+                                            @T("admin.mahjar.handover.video.upload")
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="VideoUrl" /></div>
+                                    <div class="col-md-9"><nop-editor asp-for="VideoUrl" /></div>
+                                </div>
+                            }
+                            else if (!string.IsNullOrEmpty(Model.VideoUrl))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="VideoUrl" /></div>
+                                    <div class="col-md-9"><div class="form-text-row"><a href="@Model.VideoUrl" target="_blank" rel="noopener noreferrer">@Model.VideoUrl</a></div></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* the condition itself *@
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="ConditionGradeId" /></div>
+                                <div class="col-md-9">
+                                    @if (Model.IsEditable)
+                                    {
+                                        <nop-select asp-for="ConditionGradeId" asp-items="@(await ((ItemConditionGrade)Model.ConditionGradeId).ToSelectListAsync())" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@((await ((ItemConditionGrade)Model.ConditionGradeId).ToSelectListAsync()).FirstOrDefault(item => item.Selected)?.Text)</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="ConditionNotes" /></div>
+                                <div class="col-md-9">
+                                    @if (Model.IsEditable)
+                                    {
+                                        <nop-textarea asp-for="ConditionNotes" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.ConditionNotes</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="HasDamage" /></div>
+                                <div class="col-md-9">
+                                    @if (Model.IsEditable)
+                                    {
+                                        <nop-editor asp-for="HasDamage" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@(Model.HasDamage ? T("Admin.Common.Yes") : T("Admin.Common.No"))</div>
+                                    }
+                                </div>
+                            </div>
+                            <div id="condition-damage-block" class="@(Model.HasDamage || Model.IsEditable ? null : "d-none")">
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="DamageSeverityId" /></div>
+                                    <div class="col-md-9">
+                                        @if (Model.IsEditable)
+                                        {
+                                            <nop-select asp-for="DamageSeverityId" asp-items="@(await ((ItemStatusNoteSeverity)Model.DamageSeverityId).ToSelectListAsync())" />
+                                        }
+                                        else if (Model.HasDamage)
+                                        {
+                                            <div class="form-text-row">@((await ((ItemStatusNoteSeverity)Model.DamageSeverityId).ToSelectListAsync()).FirstOrDefault(item => item.Selected)?.Text)</div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="DamageDescription" /></div>
+                                    <div class="col-md-9">
+                                        @if (Model.IsEditable)
+                                        {
+                                            <nop-textarea asp-for="DamageDescription" />
+                                        }
+                                        else
+                                        {
+                                            <div class="form-text-row">@Model.DamageDescription</div>
+                                        }
+                                    </div>
+                                </div>
+                                @if (isReturn)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-md-3"><nop-label asp-for="DamageDeduction" /></div>
+                                        <div class="col-md-9">
+                                            @if (Model.IsEditable)
+                                            {
+                                                <nop-editor asp-for="DamageDeduction" />
+                                            }
+                                            else
+                                            {
+                                                <div class="form-text-row">@Model.DamageDeduction</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            @if (isReturn && !string.IsNullOrEmpty(Model.DepositText))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="DepositText" /></div>
+                                    <div class="col-md-9"><div class="form-text-row">@Model.DepositText</div></div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="RefundText" /></div>
+                                    <div class="col-md-9"><div class="form-text-row"><strong>@Model.RefundText</strong></div></div>
+                                </div>
+                            }
+                            <div class="form-group row">
+                                <div class="col-md-3"><nop-label asp-for="InternalComment" /></div>
+                                <div class="col-md-9">
+                                    @if (Model.IsEditable)
+                                    {
+                                        <nop-textarea asp-for="InternalComment" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.InternalComment</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+</form>
+
+@if (Model.IsEditable)
+{
+    <script>
+        $(function () {
+            //the damage fields only matter when damage was found
+            function toggleDamage() {
+                $('#condition-damage-block').toggleClass('d-none', !$('#@Html.IdFor(model => model.HasDamage)').is(':checked'));
+            }
+            $('#@Html.IdFor(model => model.HasDamage)').on('click change', toggleDamage);
+            toggleDamage();
+
+            //the same two limits the upload action enforces, checked here so nobody waits minutes for a refusal
+            const maxVideoBytes = @Html.Raw(Json.Serialize(Model.MaxVideoSizeMb)) * 1024 * 1024;
+            const allowedExtensions = @Html.Raw(Json.Serialize(Model.AllowedVideoExtensions));
+            const videoMissing = @Html.Raw(Json.Serialize(videoMissingMessage));
+            const videoTooLarge = @Html.Raw(Json.Serialize(videoTooLargeMessage));
+            const videoBadFormat = @Html.Raw(Json.Serialize(videoBadFormatMessage));
+            const commonError = @Html.Raw(Json.Serialize(commonErrorMessage));
+
+            const $uploadButton = $('#uploadConditionVideo');
+            const $removeButton = $('#removeConditionVideo');
+            const $progress = $('#condition-video-progress');
+            const $progressBar = $('#condition-video-progress-bar');
+
+            function showVideo(videoFile) {
+                const player = document.getElementById('condition-video-player');
+                if (videoFile) {
+                    player.src = videoFile;
+                    player.load();
+                    $('#condition-video-current').removeClass('d-none');
+                    $('#condition-video-none').addClass('d-none');
+                } else {
+                    player.removeAttribute('src');
+                    player.load();
+                    $('#condition-video-current').addClass('d-none');
+                    $('#condition-video-none').removeClass('d-none');
+                }
+            }
+
+            $uploadButton.click(function () {
+                const input = document.getElementById('condition-video-input');
+                const file = input.files && input.files.length ? input.files[0] : null;
+                if (!file) {
+                    alert(videoMissing);
+                    return;
+                }
+
+                const dotIndex = file.name.lastIndexOf('.');
+                const extension = dotIndex < 0 ? '' : file.name.substring(dotIndex).toLowerCase();
+                if (allowedExtensions.indexOf(extension) < 0) {
+                    alert(videoBadFormat);
+                    return;
+                }
+
+                if (file.size > maxVideoBytes) {
+                    alert(videoTooLarge);
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+
+                //the action is NOT [IgnoreAntiforgeryToken], so the token rides along in the multipart body
+                const token = $('input[name=__RequestVerificationToken]').val();
+                if (token) {
+                    formData.append('__RequestVerificationToken', token);
+                }
+
+                $uploadButton.attr('disabled', true);
+                $progress.removeClass('d-none');
+                $progressBar.css('width', '0%').text('0%');
+
+                const request = new XMLHttpRequest();
+                request.open('POST', '@Html.Raw(Url.Action("CheckVideoUpload", "Handover", new { checkId = Model.Id }))');
+
+                request.upload.onprogress = function (e) {
+                    if (!e.lengthComputable) {
+                        return;
+                    }
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    $progressBar.css('width', percent + '%').text(percent + '%');
+                };
+
+                request.onload = function () {
+                    $uploadButton.attr('disabled', false);
+                    $progress.addClass('d-none');
+
+                    if (request.status < 200 || request.status >= 300) {
+                        alert(commonError);
+                        return;
+                    }
+
+                    const data = JSON.parse(request.responseText);
+                    if (data.success) {
+                        showVideo(data.videoFile);
+                        input.value = '';
+                    } else {
+                        display_nop_error(data);
+                    }
+                };
+
+                request.onerror = function () {
+                    $uploadButton.attr('disabled', false);
+                    $progress.addClass('d-none');
+                    alert(commonError);
+                };
+
+                request.send(formData);
+            });
+
+            $removeButton.click(function () {
+                $removeButton.attr('disabled', true);
+
+                const postData = {};
+                addAntiForgeryToken(postData);
+
+                $.ajax({
+                    cache: false,
+                    type: 'POST',
+                    url: '@Html.Raw(Url.Action("CheckVideoDelete", "Handover", new { checkId = Model.Id }))',
+                    data: postData,
+                    success: function (data) {
+                        if (data.success) {
+                            showVideo(null);
+                        } else {
+                            display_nop_error(data);
+                        }
+                    },
+                    error: function () {
+                        alert(commonError);
+                    },
+                    complete: function () {
+                        $removeButton.attr('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}

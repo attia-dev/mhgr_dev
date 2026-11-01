@@ -1,0 +1,253 @@
+@model HomeSlidesModel
+@*[Mahjar home-motion] HERO carousel — full-bleed, right under the menu bar. Stacked slides with a slow cross-fade;
+  FullBleed = photo (Ken Burns) + legibility gradient; Spotlight = brand stage with the watch on a cream display plate,
+  engraved rotating rings, spotlight cone and light sweep. All motion lives in mahjar.home.css / mahjar.home.js
+  (progressive: without JS the first slide simply stands still). No slide at all → the HomepageText topic block.*@
+@{
+    var slides = Model.Slides;
+    var count = slides.Count;
+    var rtl = await Html.ShouldUseRtlThemeAsync();
+
+    //Arabic-script test for the word runs of a title (see SplitTitle)
+    static bool IsArabic(string word)
+    {
+        foreach (var ch in word)
+        {
+            if ((ch >= '\u0600' && ch <= '\u06FF') || (ch >= '\u0750' && ch <= '\u077F') || (ch >= '\u08A0' && ch <= '\u08FF')
+                || (ch >= '\uFB50' && ch <= '\uFDFF') || (ch >= '\uFE70' && ch <= '\uFEFF'))
+                return true;
+        }
+        return false;
+    }
+
+    //the title's own base direction = its first strong character (the heading carries dir="auto", so a Latin title
+    //on the Arabic page — a slide filled in one language only falls back to it — reads LTR, and vice versa)
+    static bool StartsArabic(string text)
+    {
+        foreach (var ch in text ?? string.Empty)
+        {
+            if (char.IsLetter(ch))
+                return IsArabic(ch.ToString());
+        }
+        return false;
+    }
+
+    //each word rises on its own; consecutive words written in the OTHER script than the title's own direction stay
+    //together in one run, so a Latin phrase inside an Arabic title (or vice versa) is never scrambled by the inline-blocks
+    List<string> SplitTitle(string title)
+    {
+        var runs = new List<string>();
+        var foreignRun = false;
+        var titleRtl = StartsArabic(title);
+        foreach (var word in (title ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var foreign = titleRtl ? !IsArabic(word) : IsArabic(word);
+            if (foreign && foreignRun && runs.Count > 0)
+                runs[^1] += " " + word;
+            else
+                runs.Add(word);
+            foreignRun = foreign;
+        }
+        return runs;
+    }
+}
+@functions {
+    //the title as word spans (each rises on its own, delayed by --i)
+    private Microsoft.AspNetCore.Html.IHtmlContent TitleWords(IList<string> words)
+    {
+        var html = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+        for (var w = 0; w < words.Count; w++)
+        {
+            html.AppendHtml($"<span class=\"mhx-w\" style=\"--i:{w}\">");
+            html.Append(words[w]);
+            html.AppendHtml("</span>");
+            if (w < words.Count - 1)
+                html.AppendHtml(" ");
+        }
+        return html;
+    }
+}
+@if (count == 0)
+{
+    @await Component.InvokeAsync(typeof(TopicBlockViewComponent), new { systemName = "HomepageText" })
+    return;
+}
+<section class="mhx-hero" id="mhx-hero" tabindex="-1" aria-roledescription="@T("Mahjar.Home.Hero.Carousel")" aria-label="@T("Mahjar.Home.Hero.Label")"
+         data-count="@count" data-interval="6500">
+    <div class="mhx-hero__slides">
+        @for (var i = 0; i < count; i++)
+        {
+            var s = slides[i];
+            var first = i == 0;
+            var overlay = (s.OverlayOpacity / 100.0).ToString("0.##", CultureInfo.InvariantCulture);
+            var hasCta = !string.IsNullOrEmpty(s.Url) && !string.IsNullOrEmpty(s.ButtonText);
+            var words = SplitTitle(s.Title);
+            <div class="mhx-slide mhx-slide--@s.Layout mhx-pos-@s.ContentPosition@(i % 2 == 1 ? " mhx-slide--alt" : null)@(first ? " is-active is-first" : null)"
+                 role="group" aria-roledescription="@T("Mahjar.Home.Hero.Slide")" aria-label="@(i + 1) / @count"
+                 data-index="@i" style="--mhx-ov:@overlay" inert="@(!first)">
+                @if (s.Layout == "spotlight")
+                {
+                    <div class="mhx-slide__media mhx-stage" aria-hidden="true">
+                        <span class="mhx-stage__glow"></span>
+                        <span class="mhx-stage__cone"></span>
+                        <div class="mhx-stage__obj">
+                            <div class="mhx-stage__ringwrap">
+                                <svg class="mhx-stage__rings" viewBox="0 0 600 600" focusable="false">
+                                    <circle cx="300" cy="300" r="296" class="mhx-r mhx-r--c" />
+                                    <circle cx="300" cy="300" r="282" class="mhx-r mhx-r--min" />
+                                    <circle cx="300" cy="300" r="282" class="mhx-r mhx-r--hour" />
+                                    <circle cx="300" cy="300" r="266" class="mhx-r mhx-r--c2" />
+                                    <g class="mhx-rings__inner">
+                                        <circle cx="300" cy="300" r="250" class="mhx-r mhx-r--dash" />
+                                        <path d="M300 38 L300 58 M300 542 L300 562 M38 300 L58 300 M542 300 L562 300" class="mhx-r mhx-r--cross" />
+                                    </g>
+                                </svg>
+                            </div>
+                            <span class="mhx-stage__shadow"></span>
+                            <div class="mhx-stage__platewrap">
+                                <div class="mhx-stage__plate">
+                                    <div class="mhx-stage__float">
+                                        <div class="mhx-stage__spin">
+                                            <picture>
+                                                <source media="(max-width: 640px)" srcset="@s.MobileImageUrl" />
+                                                <img class="mhx-stage__watch" src="@s.ImageUrl" alt="" decoding="async"
+                                                     loading="@(first ? "eager" : "lazy")" fetchpriority="@(first ? "high" : "low")" />
+                                            </picture>
+                                        </div>
+                                    </div>
+                                    <span class="mhx-stage__sweep"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mhx-slide__media mhx-photo" aria-hidden="true">
+                        <div class="mhx-photo__kb">
+                            <picture>
+                                <source media="(max-width: 640px)" srcset="@s.MobileImageUrl" />
+                                <img class="mhx-photo__img" src="@s.ImageUrl" alt="" decoding="async"
+                                     loading="@(first ? "eager" : "lazy")" fetchpriority="@(first ? "high" : "low")" />
+                            </picture>
+                            @if (!string.IsNullOrEmpty(s.VideoUrl))
+                            {
+                                @*the source is attached by mahjar.home.js only above 640px and without Save-Data*@
+                                <video class="mhx-photo__video" muted loop playsinline autoplay preload="metadata" poster="@s.ImageUrl" data-src="@s.VideoUrl"></video>
+                            }
+                        </div>
+                        <span class="mhx-photo__scrim"></span>
+                    </div>
+                }
+                <div class="mhx-slide__content">
+                    <div class="mhx-slide__inner">
+                        @if (!string.IsNullOrEmpty(s.Kicker))
+                        {
+                            <p class="mhx-kicker"><span class="mhx-kicker__line" aria-hidden="true"></span><span class="mhx-kicker__text" dir="auto">@s.Kicker</span></p>
+                        }
+                        @*dir="auto" on every admin text: a slide filled in one language only shows its fallback text in its own direction*@
+                        @if (first)
+                        {
+                            <h1 class="mhx-title mhx-display" dir="auto">@TitleWords(words)</h1>
+                        }
+                        else
+                        {
+                            <h2 class="mhx-title mhx-display" dir="auto">@TitleWords(words)</h2>
+                        }
+                        @if (!string.IsNullOrEmpty(s.Subtitle))
+                        {
+                            <p class="mhx-sub" dir="auto" style="--n:@words.Count">@s.Subtitle</p>
+                        }
+                        @if (hasCta)
+                        {
+                            <a class="mhx-cta" href="@s.Url" style="--n:@words.Count" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)">
+                                <span class="mhx-cta__label" dir="auto">@s.ButtonText</span>
+                                <svg class="mhx-cta__arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                            </a>
+                        }
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(s.Url))
+                {
+                    @*the whole slide is clickable; when there is a button the button is the accessible link*@
+                    if (hasCta)
+                    {
+                        <a class="mhx-slide__hit" href="@s.Url" tabindex="-1" aria-hidden="true" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)"></a>
+                    }
+                    else
+                    {
+                        <a class="mhx-slide__hit" href="@s.Url" aria-label="@s.Title" target="@(s.IsExternal ? "_blank" : null)" rel="@(s.IsExternal ? "noopener noreferrer" : null)"></a>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <div class="mhx-hero__chrome">
+        @if (count > 1)
+        {
+            <div class="mhx-hero__controls">
+                <div class="mhx-hero__bars">
+                    @for (var i = 0; i < count; i++)
+                    {
+                        <button type="button" class="mhx-bar@(i == 0 ? " is-active" : null)" data-go="@i"
+                                aria-label="@string.Format(T("Mahjar.Home.Hero.GoTo").Text, i + 1, count)" aria-current="@(i == 0 ? "true" : null)">
+                            <span class="mhx-bar__fill"></span>
+                        </button>
+                    }
+                </div>
+                <span class="mhx-hero__count" aria-hidden="true"><b class="mhx-hero__cur">01</b><i></i>@count.ToString("00", CultureInfo.InvariantCulture)</span>
+                <button type="button" class="mhx-hero__toggle" aria-pressed="false"
+                        aria-label="@T("Mahjar.Home.Hero.Pause")" data-label-pause="@T("Mahjar.Home.Hero.Pause")" data-label-play="@T("Mahjar.Home.Hero.Play")">
+                    <svg class="mhx-ico-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6v12M15 6v12" /></svg>
+                    <svg class="mhx-ico-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 6l10 6-10 6z" /></svg>
+                </button>
+                <div class="mhx-hero__arrows">
+                    <button type="button" class="mhx-arrow mhx-arrow--prev" aria-label="@T("Mahjar.Home.Hero.Previous")">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" /></svg>
+                    </button>
+                    <button type="button" class="mhx-arrow mhx-arrow--next" aria-label="@T("Mahjar.Home.Hero.Next")">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+            </div>
+        }
+        <a class="mhx-cue" href="#mhx-after-hero">
+            <span class="mhx-cue__label">@T("Mahjar.Home.Hero.Scroll")</span>
+            <span class="mhx-cue__line" aria-hidden="true"><i></i></span>
+        </a>
+    </div>
+    <p class="mhx-sr" aria-live="polite" aria-atomic="true"></p>
+</section>
+@*arm the intro right here (not in the footer bundle), so the first slide rises at first paint; everything else is
+  wired by mahjar.home.js. Without motion (reduced-motion / no IntersectionObserver) nothing is hidden at all.
+  The hero's final height (it fills the screen under the header) and its controls row are also fixed here, at
+  parse time, so nothing shifts when the footer bundle arrives (layout shift on slow phones).*@
+<script asp-location="None">
+    (function (root, hero) {
+        try {
+            if (!hero) return;
+            hero.style.setProperty('--mhx-top', Math.max(0, Math.round(hero.getBoundingClientRect().top + (window.pageYOffset || 0))) + 'px');
+            if (!('IntersectionObserver' in window) || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+            root.classList.add('mhx-motion');
+            hero.classList.add('mhx-ready');
+            if ((parseInt(hero.getAttribute('data-count'), 10) || 0) > 1) hero.classList.add('is-autoable');
+            //the first words rise once the display fonts are in (capped at 1.2s), so they never swap font mid-rise
+            var first = hero.querySelector('.mhx-slide');
+            var started = false;
+            var start = function () {
+                if (started) return;
+                started = true;
+                requestAnimationFrame(function () { requestAnimationFrame(function () { if (first) first.classList.add('is-in'); }); });
+            };
+            var ar = (root.getAttribute('lang') || '').toLowerCase().indexOf('ar') === 0;
+            if (document.fonts && document.fonts.load && window.Promise) {
+                Promise.all(ar ? [document.fonts.load('700 1em "Aref Ruqaa"'), document.fonts.load('400 1em "Amiri"')]
+                    : [document.fonts.load('italic 600 1em "Playfair Display"'), document.fonts.load('500 1em "Playfair Display"')]).then(start, start);
+                setTimeout(start, 1200);
+            } else {
+                start();
+            }
+        } catch (e) { }
+    })(document.documentElement, document.getElementById('mhx-hero'));
+</script>

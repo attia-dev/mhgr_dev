@@ -1,0 +1,62 @@
+@model Nop.Web.Models.Contract.ContractViewModel
+@*[Mahjar handover] the read-only contract page: the frozen document, the signature and the documented condition of
+    each item before signing, at delivery and at a rental return*@
+@{
+    Layout = "_ColumnsTwo";
+    NopHtml.AddTitleParts(T("mahjar.contracts.view.title").Text);
+    NopHtml.AppendPageCssClassParts("html-account-page");
+    NopHtml.AppendPageCssClassParts("html-contract-details-page");
+}
+
+@section left
+{
+    @await Component.InvokeAsync(typeof(CustomerNavigationViewComponent), new { selectedTabId = CustomerNavigationEnum.Contracts })
+}
+
+<style>
+    .contract-details-page .contract-status-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #eee; }
+    .contract-details-page .contract-body { max-height: 520px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin: 12px 0 20px; background: #fff; }
+    .contract-details-page .contract-signature img { max-width: 320px; max-width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+    .contract-details-page .section { margin-bottom: 20px; }
+</style>
+
+<div class="page account-page contract-details-page">
+    <div class="page-title">
+        <h1>@T("mahjar.contracts.view.title") - @Model.Number</h1>
+    </div>
+    <div class="page-body">
+        <span class="contract-status-badge">@Model.Status</span>
+
+        <div class="contract-body">
+            @Html.Raw(Model.BodyHtml)
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SignedName))
+        {
+            <div class="section contract-signature">
+                <div class="title"><strong>@T("mahjar.contracts.view.signature")</strong></div>
+                <p>@T("mahjar.contracts.view.signedby"): @Model.SignedName@(string.IsNullOrEmpty(Model.SignedOn) ? "" : $" - {Model.SignedOn}")</p>
+                @if (!string.IsNullOrEmpty(Model.SignatureDataUrl))
+                {
+                    <img src="@Model.SignatureDataUrl" alt="@Model.SignedName" />
+                }
+            </div>
+        }
+
+        <div class="section contract-condition-section">
+            <div class="title"><strong>@T("mahjar.contracts.condition.title")</strong></div>
+            @if (Model.ConditionChecks.Any())
+            {
+                @await Html.PartialAsync("_ConditionChecks", Model.ConditionChecks)
+            }
+            else
+            {
+                <div class="no-data">@T("mahjar.contracts.condition.none")</div>
+            }
+        </div>
+
+        <div class="buttons">
+            <button type="button" class="button-1" onclick="setLocation('@Url.RouteUrl("CustomerContracts")')">@T("mahjar.contracts.title")</button>
+        </div>
+    </div>
+</div>

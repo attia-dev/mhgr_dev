@@ -1,0 +1,69 @@
+@* [Mahjar contracts] contract template list — one template per contract kind (purchase / rental / mixed) *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model ContractTemplateSearchModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.contracts.template.list.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Contract template");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("admin.mahjar.contracts.template.list.title")
+    </h1>
+    <div class="float-right">
+        &nbsp;
+    </div>
+</div>
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        <p>@T("admin.mahjar.contracts.template.list.hint")</p>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "contracttemplates-grid",
+                            UrlRead = new DataUrl("Templates", "ContractRequest", null),
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(ContractTemplateContentModel.Name))
+                                {
+                                    Title = T("admin.mahjar.contracts.template.fields.name").Text
+                                },
+                                new ColumnProperty(nameof(ContractTemplateContentModel.TemplateType))
+                                {
+                                    Title = T("admin.mahjar.contracts.template.fields.type").Text,
+                                    Width = "200"
+                                },
+                                new ColumnProperty(nameof(ContractTemplateContentModel.UpdatedOn))
+                                {
+                                    Title = T("admin.mahjar.contracts.template.fields.updatedon").Text,
+                                    Width = "200",
+                                    Render = new RenderDate()
+                                },
+                                new ColumnProperty(nameof(ContractTemplateContentModel.Id))
+                                {
+                                    Title = T("Admin.Common.Edit").Text,
+                                    Width = "100",
+                                    ClassName =  NopColumnClassDefaults.Button,
+                                    Render = new RenderButtonEdit(new DataUrl("~/Admin/ContractRequest/EditTemplate"))
+                                }
+                            }
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

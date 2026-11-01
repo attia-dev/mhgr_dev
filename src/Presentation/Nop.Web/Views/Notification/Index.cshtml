@@ -1,0 +1,69 @@
+@model Nop.Web.Models.Notification.NotificationListModel
+@*[Mahjar notifications] buyer notification feed page*@
+@{
+    Layout = "_ColumnsTwo";
+    NopHtml.AddTitleParts(T("mahjar.notifications.title").Text);
+    NopHtml.AppendPageCssClassParts("html-account-page");
+    NopHtml.AppendPageCssClassParts("html-notifications-page");
+}
+
+@section left
+{
+    @await Component.InvokeAsync(typeof(CustomerNavigationViewComponent), new { selectedTabId = CustomerNavigationEnum.Notifications })
+}
+
+<div class="page account-page notifications-page">
+    <div class="page-title">
+        <h1>@T("Account.MyAccount") - @T("mahjar.notifications.title")</h1>
+        @if (Model.Items.Count > 0)
+        {
+            <a href="#" class="button-2 mark-all-read-page" data-mark-all-url="@Url.RouteUrl("NotificationMarkAllRead")">@T("mahjar.notifications.markallread")</a>
+        }
+    </div>
+    <div class="page-body">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="no-data">@T("mahjar.notifications.empty")</div>
+        }
+        else
+        {
+            <ul class="notification-list">
+                @foreach (var item in Model.Items)
+                {
+                    <li class="notification-item @(item.IsRead ? "read" : "unread")" data-id="@item.Id">
+                        <div class="notification-meta">
+                            <span class="notification-type">@item.TypeLabel</span>
+                            <span class="notification-time">@item.CreatedOnStr</span>
+                        </div>
+                        <div class="notification-title">
+                            @if (!string.IsNullOrEmpty(item.Url))
+                            {
+                                <a href="@Url.Content("~/" + item.Url.TrimStart('/'))">@item.Title</a>
+                            }
+                            else
+                            {
+                                @item.Title
+                            }
+                        </div>
+                        <div class="notification-body">@item.Body</div>
+                    </li>
+                }
+            </ul>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="pager notification-pager">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a href="@Url.RouteUrl("CustomerNotificationsPaged", new { pageNumber = Model.PageIndex - 1 })" class="previous-page">@T("Pager.Previous")</a>
+                    }
+                    <span class="current-page">@(Model.PageIndex + 1) / @Model.TotalPages</span>
+                    @if (Model.HasNextPage)
+                    {
+                        <a href="@Url.RouteUrl("CustomerNotificationsPaged", new { pageNumber = Model.PageIndex + 1 })" class="next-page">@T("Pager.Next")</a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

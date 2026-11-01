@@ -1,0 +1,337 @@
+@* [Mahjar contracts] contract settings: the contract stage, and the values the contract templates print *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model ContractSettingsModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.contracts.settings.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Contract settings");
+}
+
+<form asp-controller="ContractRequest" asp-action="Settings" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.contracts.settings.title")
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.Save")
+            </button>
+        </div>
+    </div>
+
+    <div asp-validation-summary="All"></div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.settings.blocktitle.stage")
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Enabled" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="Enabled" />
+                                    <span asp-validation-for="Enabled"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="RequireOnlyForRentals" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="RequireOnlyForRentals" />
+                                    <span asp-validation-for="RequireOnlyForRentals"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* [Mahjar contracts] everything below is printed inside the contract through its tokens *@
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.settings.blocktitle.party")
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">@T("admin.mahjar.contracts.settings.hint")</p>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="CommercialRegistrationNumber" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="CommercialRegistrationNumber" />
+                                    <span asp-validation-for="CommercialRegistrationNumber"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.settings.blocktitle.agreement")
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="AgreementVersion" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="AgreementVersion" />
+                                    <span asp-validation-for="AgreementVersion"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="AgreementEffectiveDate" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="AgreementEffectiveDate" />
+                                    <span asp-validation-for="AgreementEffectiveDate"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="AgreementUpdatedDate" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="AgreementUpdatedDate" />
+                                    <span asp-validation-for="AgreementUpdatedDate"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.settings.blocktitle.policy")
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="RentalItemValueCap" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="RentalItemValueCap" />
+                                    <span asp-validation-for="RentalItemValueCap"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="LateReturnGraceHours" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="LateReturnGraceHours" />
+                                    <span asp-validation-for="LateReturnGraceHours"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="RefundProcessingDays" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="RefundProcessingDays" />
+                                    <span asp-validation-for="RefundProcessingDays"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="DamageObjectionDays" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="DamageObjectionDays" />
+                                    <span asp-validation-for="DamageObjectionDays"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ComplaintHandlingDays" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ComplaintHandlingDays" />
+                                    <span asp-validation-for="ComplaintHandlingDays"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="AmicableSettlementDays" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="AmicableSettlementDays" />
+                                    <span asp-validation-for="AmicableSettlementDays"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* the contract is rendered in the customer's language, so each of these texts has one value per language *@
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.settings.blocktitle.defaults")
+                        </div>
+                        <div class="card-body">
+                            @(await Html.LocalizedEditorAsync<ContractSettingsModel, ContractSettingsLocalizedModel>("contractsettings-localized",
+                                @<div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].OperatorLegalName" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].OperatorLegalName" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].SupportChannel" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].SupportChannel" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].GuaranteeType" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].GuaranteeType" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].DeliveryDetails" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].DeliveryDetails" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].ReturnDetails" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].ReturnDetails" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].LateReturnFeeTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].LateReturnFeeTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].CancellationFeeTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].CancellationFeeTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].ExtraFeesTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].ExtraFeesTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="@Model.Locales[item].TaxTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="@Model.Locales[item].TaxTerms" />
+                                        </div>
+                                    </div>
+                                    <input type="hidden" asp-for="@Model.Locales[item].LanguageId" />
+                                </div>
+                                ,
+                                @<div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="OperatorLegalName" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="OperatorLegalName" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="SupportChannel" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="SupportChannel" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="GuaranteeType" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="GuaranteeType" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="DeliveryDetails" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="DeliveryDetails" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="ReturnDetails" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="ReturnDetails" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="LateReturnFeeTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="LateReturnFeeTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="CancellationFeeTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="CancellationFeeTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="ExtraFeesTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="ExtraFeesTerms" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <nop-label asp-for="TaxTerms" />
+                                        </div>
+                                        <div class="col-md-9">
+                                            <nop-editor asp-for="TaxTerms" />
+                                        </div>
+                                    </div>
+                                </div>
+                                ))
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

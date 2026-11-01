@@ -1,0 +1,36 @@
+﻿@model IList<ProductOverviewModel>
+@using Nop.Core.Domain.Catalog
+@inject Nop.Web.Factories.ICatalogModelFactory catalogModelFactory
+@if (Model.Count > 0)
+{
+    @*[Mahjar home-motion] unified section heading (eyebrow + title + brass hairline) and, after the grid, a "view all"
+      row: there is no single all-watches listing, so it offers every home category as a pill (real listings, no fake filter)*@
+    var viewAllCategories = await catalogModelFactory.PrepareHomepageCategoryModelsAsync();
+    <div class="product-grid home-page-product-grid mhx-featured" id="mhx-featured">
+        <header class="mhx-head mhx-rv">
+            <p class="mhx-head__eyebrow">@T("Mahjar.Home.Featured.Eyebrow")</p>
+            <h2 class="mhx-head__title mhx-display">@T("Homepage.Products")</h2>
+            <span class="mhx-head__line" aria-hidden="true"></span>
+        </header>
+        <div class="item-grid mhx-stagger">
+            @foreach (var item in Model)
+            {
+                <div class="item-box">
+                    @await Html.PartialAsync("_ProductBox", item)
+                </div>
+            }
+        </div>
+        @if (viewAllCategories.Any())
+        {
+            <nav class="mhx-viewall mhx-rv" aria-label="@T("Mahjar.Home.Featured.ViewAll")">
+                <span class="mhx-viewall__label">@T("Mahjar.Home.Featured.ViewAll")</span>
+                <span class="mhx-viewall__list">
+                    @foreach (var category in viewAllCategories)
+                    {
+                        <a class="mhx-viewall__pill" href="@(Url.RouteUrl<Category>(new { SeName = category.SeName }))">@category.Name<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg></a>
+                    }
+                </span>
+            </nav>
+        }
+    </div>
+}

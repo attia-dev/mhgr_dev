@@ -1,0 +1,30 @@
+﻿@using Nop.Core.Domain.Catalog
+@using Nop.Services.Helpers
+
+@inject CatalogSettings catalogSettings
+@inject IThemeContext themeContext
+@inject IUserAgentHelper userAgentHelper
+
+@{
+    Layout ="";
+    var themeName = await themeContext.GetWorkingThemeNameAsync();
+    var supportRtl = await Html.ShouldUseRtlThemeAsync();
+
+    //add main CSS file
+    NopHtml.AppendCssFileParts($"~/Themes/{themeName}/Content/css/styles{(supportRtl ? ".rtl" : "")}.css");
+    
+    //add swiper css file
+    if (catalogSettings.DisplayAllPicturesOnCatalogPages)
+    {
+        NopHtml.AppendCssFileParts("~/lib_npm/swiper/swiper-bundle.min.css");
+    }
+
+    //add jQuery UI css file
+    NopHtml.AppendCssFileParts("~/lib_npm/jquery-ui-dist/jquery-ui.min.css");
+}
+@* MHGR brand fonts — emitted as raw <head> markup (durable; NOT in the clobber-prone customheadtags).
+   Html.Raw avoids the built-in <link> tag-helper and lets the '@' chars in the Google Fonts URL pass through.
+   Playfair Display = Latin · Aref Ruqaa = Arabic display · Amiri = serif body (brand book p.10-11) *@
+@Html.Raw("<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">" +
+    "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>" +
+    "<link href=\"https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Aref+Ruqaa:wght@400;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&display=swap\" rel=\"stylesheet\">")

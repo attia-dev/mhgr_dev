@@ -1,0 +1,186 @@
+@model ProductDetailsModel
+
+@using Nop.Core.Domain.Catalog
+@using Nop.Services.Helpers
+@inject CatalogSettings catalogSettings
+@inject IUserAgentHelper userAgentHelper
+@if (Model.IsRental)
+{
+    var startDateControlId = $"rental_start_date_{Model.Id}";
+    var endDateControlId = $"rental_end_date_{Model.Id}";
+    var dateControlChangeHandlerFuncName = $"on_rental_datepicker_select_{Model.Id}";
+    var beforeShowDayFuncName = $"mahjar_rental_day_{Model.Id}";
+
+    //[Mahjar] emit this via Html.Raw below: the ar-EG short-date pattern contains a U+200F RTL mark, and
+    //Razor would HTML-encode it to the literal text "&#x200F;" inside the <script>, which corrupts both the
+    //displayed date and the posted value (server ParseExact then fails). Html.Raw keeps the real mark.
+    var datePickerFormat = Html.GetJQueryDateFormat();//java-script format
+    var isMobileDevice = userAgentHelper.IsMobileDevice();
+
+    //a product that is both rentable and purchasable shows a Buy/Rent toggle. [Mahjar buy-or-rent]
+    var showToggle = Model.AvailableForPurchase;
+
+    //[Mahjar home-slides] ?mode=rent (a "Rent now" home slide / the home Rent tile) opens the toggle on Rent; Buy otherwise
+    var startInRent = showToggle && string.Equals(Context.Request.Query["mode"].ToString(), "rent", StringComparison.OrdinalIgnoreCase);
+
+    <div class="attributes rental-attributes">
+        @if (showToggle)
+        {
+            <div class="attribute-item rental-mode-toggle" id="rental-mode-toggle-@Model.Id">
+                <div class="attribute-label">
+                    <label class="text-prompt">@T("Products.PurchaseMode"):</label>
+                </div>
+                <div class="attribute-data">
+                    <label class="rental-mode-option">
+                        <input type="radio" name="purchase_mode_@Model.Id" value="buy" checked="@(!startInRent)" />
+                        <span class="rental-mode-name">@T("Products.PurchaseMode.Buy")</span>
+                        <span class="rental-mode-price">@Model.ProductPrice.Price</span>
+                    </label>
+                    <label class="rental-mode-option">
+                        <input type="radio" name="purchase_mode_@Model.Id" value="rent" checked="@startInRent" />
+                        <span class="rental-mode-name">@T("Products.PurchaseMode.Rent")</span>
+                        <span class="rental-mode-price">@Model.ProductPrice.RentalPrice</span>
+                    </label>
+                </div>
+            </div>
+        }
+
+        <div class="rental-dates" id="rental-dates-@Model.Id" style="@(showToggle && !startInRent ? "display:none" : "")">
+            <div class="attribute-item">
+                <div class="attribute-label">
+                    <label class="text-prompt">
+                        @T("Products.RentalStartDate"):
+                    </label>
+                    <span class="required">*</span>
+                </div>
+                <div class="attribute-data">
+                    <input id="@(startDateControlId)" name="@(startDateControlId)" type="text" class="datepicker" value="@(Model.RentalStartDate.HasValue ? Model.RentalStartDate.Value.ToShortDateString() : null)" @if(isMobileDevice){<text>readonly</text>}/>
+                    <script asp-location="Footer">
+                        $(function() {
+                            $("#@(startDateControlId)").datepicker({ dateFormat: "@Html.Raw(datePickerFormat)", onSelect: @(dateControlChangeHandlerFuncName), beforeShowDay: @(beforeShowDayFuncName) });
+                        });
+                    </script>
+                </div>
+            </div>
+            <div class="attribute-item">
+                <div class="attribute-label">
+                    <label class="text-prompt">
+                        @T("Products.RentalEndDate"):
+                    </label>
+                    <span class="required">*</span>
+                </div>
+                <div class="attribute-data">
+                    <input id="@(endDateControlId)" name="@(endDateControlId)" type="text" class="datepicker" value="@(Model.RentalEndDate.HasValue ? Model.RentalEndDate.Value.ToShortDateString() : null)" @if(isMobileDevice){<text>readonly</text>}/>
+                    <script asp-location="Footer">
+                        $(function() {
+                            $("#@(endDateControlId)").datepicker({ dateFormat: "@Html.Raw(datePickerFormat)", onSelect: @(dateControlChangeHandlerFuncName), beforeShowDay: @(beforeShowDayFuncName) });
+                        });
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.RentalSecurityDeposit))
+        {
+            <div class="rental-deposit-note">@T("Products.RentalSecurityDeposit.Note"): <strong>@Model.RentalSecurityDeposit</strong></div>
+        }
+
+        @*availability calendar: fetch booked ranges and grey them out so they can't be picked. [Mahjar buy-or-rent]*@
+        <script asp-location="Footer">
+            var mahjar_booked_@(Model.Id) = [];
+            function @(beforeShowDayFuncName)(date) {
+                var t = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+                for (var i = 0; i < mahjar_booked_@(Model.Id).length; i++) {
+                    if (t >= mahjar_booked_@(Model.Id)[i][0] && t <= mahjar_booked_@(Model.Id)[i][1]) {
+                        return [false, 'rental-booked-day', ''];
+                    }
+                }
+                return [true, '', ''];
+            }
+            $(function () {
+                $.getJSON('@Html.Raw(Url.RouteUrl("RentalBookedDates", new { productId = Model.Id }))', function (data) {
+                    if (data && data.ranges && data.ranges.length) {
+                        mahjar_booked_@(Model.Id) = data.ranges.map(function (r) {
+                            var s = r.from.split('-'), e = r.to.split('-');
+                            return [Date.UTC(+s[0], +s[1] - 1, +s[2]), Date.UTC(+e[0], +e[1] - 1, +e[2])];
+                        });
+                        try {
+                            $('#@(startDateControlId)').datepicker('refresh');
+                            $('#@(endDateControlId)').datepicker('refresh');
+                        } catch (err) { }
+                    }
+                });
+            });
+        </script>
+
+        <script asp-location="Footer">
+            function @(dateControlChangeHandlerFuncName)() {
+                @{
+                    //almost the same implementation is used in the \Views\Product\_ProductAttributes.cshtml file
+                    var productId = Model.Id;
+                    if (catalogSettings.AjaxProcessAttributeChange)
+                    {
+                        <text>
+                        $.ajax({
+                            cache: false,
+                            url: "@Html.Raw(Url.RouteUrl("ProductDetailsAttributeChange", new {productId = productId, validateAttributeConditions = false, loadPicture = false }))",
+                            data: $('#product-details-form').serialize(),
+                            type: "POST",
+                            success: function (data, textStatus, jqXHR) {
+                                if (data.sku) {
+                                    $('#sku-@productId').text(data.sku);
+                                }
+                                if (data.mpn) {
+                                    $('#mpn-@productId').text(data.mpn);
+                                }
+                                if (data.gtin) {
+                                    $('#gtin-@productId').text(data.gtin);
+                                }
+                                if (data.price) {
+                                    $('.price-value-@productId').text(data.price);
+                                }
+                            }
+                        });
+                        </text>
+                    }
+                }
+            }
+        </script>
+
+        @if (showToggle)
+        {
+            <script asp-location="Footer">
+                //buy/rent toggle: disabled date inputs are not serialized, so Buy mode sends no dates => buy line. [Mahjar buy-or-rent]
+                $(function () {
+                    var pid = @Model.Id;
+                    var $dates = $('#rental-dates-' + pid);
+                    var $start = $('#@startDateControlId');
+                    var $end = $('#@endDateControlId');
+                    var $btn = $('#add-to-cart-button-' + pid);
+                    var $price = $('.price-value-' + pid);
+                    var buyPriceText = $price.length ? $price.text() : '';
+                    var buyBtnText = '@Html.Raw(T("ShoppingCart.AddToCart").Text)';
+                    var rentBtnText = '@Html.Raw(T("ShoppingCart.Rent").Text)';
+
+                    function setRentalMode(mode) {
+                        if (mode === 'rent') {
+                            $dates.show();
+                            $start.prop('disabled', false);
+                            $end.prop('disabled', false);
+                            if ($btn.length) { $btn.text(rentBtnText); }
+                        } else {
+                            $dates.hide();
+                            $start.prop('disabled', true).val('');
+                            $end.prop('disabled', true).val('');
+                            if ($btn.length) { $btn.text(buyBtnText); }
+                            if ($price.length) { $price.text(buyPriceText); }
+                        }
+                    }
+
+                    $('input[name="purchase_mode_' + pid + '"]').on('change', function () { setRentalMode(this.value); });
+                    setRentalMode('@(startInRent ? "rent" : "buy")');
+                });
+            </script>
+        }
+    </div>
+}

@@ -1,0 +1,330 @@
+﻿@model ApplyVendorModel
+
+@{
+    Layout = "_ColumnsOne";
+
+    //title
+    NopHtml.AddTitleParts(T("PageTitle.Vendors.Apply").Text);
+    //page class
+    NopHtml.AppendPageCssClassParts("html-apply-vendor-page");
+}
+@*[Mahjar vendor-application] scoped styling for the partner-type chooser and the inline terms panel. Deliberately
+    neutral (no brand colours) so it inherits whatever the active theme paints — see the theme's styles.rtl.css.*@
+<style>
+    .apply-vendor-page .vendor-type-options { display: inline-block; }
+    .apply-vendor-page .vendor-type-option { display: inline-block; margin-inline-end: 22px; white-space: nowrap; }
+    .apply-vendor-page .vendor-type-option input { vertical-align: middle; margin-inline-end: 6px; }
+    .apply-vendor-page .vendor-type-option label { display: inline; width: auto; text-align: inherit; }
+    .apply-vendor-page .terms-of-service-box { margin: 10px 0 14px; border: 1px solid rgba(0,0,0,.15); border-radius: 4px; background: rgba(255,255,255,.55); }
+    .apply-vendor-page .terms-of-service-box-title { padding: 8px 12px; border-bottom: 1px solid rgba(0,0,0,.12); font-weight: bold; }
+    .apply-vendor-page .terms-of-service-box-body { max-height: 220px; overflow-y: auto; padding: 12px; text-align: start; line-height: 1.7; }
+    .apply-vendor-page .terms-of-service-box-body ol, .apply-vendor-page .terms-of-service-box-body ul { padding-inline-start: 22px; }
+    .apply-vendor-page .terms-of-service-box-body li { margin-bottom: 6px; }
+    /*[Mahjar partner-agreement] the master agreement is a long document — it gets its own, taller scroll box,
+      and the activated-services row is laid out like the partner-type chooser above it*/
+    .apply-vendor-page .partner-agreement-body { max-height: 460px; }
+    .apply-vendor-page .partner-agreement-version { font-weight: normal; opacity: .75; margin-inline-start: 8px; }
+    .apply-vendor-page .partner-services-options { display: inline-block; }
+    .apply-vendor-page .partner-services-option { display: inline-block; margin-inline-end: 22px; white-space: nowrap; }
+    .apply-vendor-page .partner-services-option input { vertical-align: middle; margin-inline-end: 6px; }
+    .apply-vendor-page .partner-services-option label { display: inline; width: auto; text-align: inherit; }
+    .apply-vendor-page .partner-services-hint { display: block; opacity: .75; font-size: .9em; margin-top: 4px; }
+</style>
+<div class="page apply-vendor-page">
+    <div class="page-title">
+        <h1>@T("PageTitle.Vendors.Apply")</h1>
+    </div>
+    <div class="page-body">
+        @await Component.InvokeAsync(typeof(TopicBlockViewComponent), new { systemName = "ApplyVendor" })
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ApplyVendorTop, additionalData = Model })
+        @if (Model.DisableFormInput)
+        {
+            <div class="result">
+                @Model.Result
+            </div>
+        }
+        else
+        {
+            @*[Mahjar partner-request] a previous application was rejected — say so, and why, before the form*@
+            @if (Model.PreviousApplicationRejected)
+            {
+                <div class="message-error partner-application-rejected">
+                    <div>@T("Vendors.ApplyAccount.Rejected")</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.PreviousApplicationRejectionReason))
+                    {
+                        <div>@T("Vendors.ApplyAccount.Rejected.Reason", Model.PreviousApplicationRejectionReason)</div>
+                    }
+                </div>
+            }
+            <form asp-route="ApplyVendorAccount" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="message-error"></div>
+                <div class="fieldset">
+                    <div class="form-fields">
+                        <div class="inputs">
+                            <label asp-for="Name" asp-postfix=":"></label>
+                            <input asp-for="Name" class="name" placeholder="@T("Vendors.ApplyAccount.Name.Hint")" />
+                            <nop-required />
+                            <span asp-validation-for="Name"></span>
+                        </div>
+                        <div class="inputs">
+                            <label asp-for="Email" asp-postfix=":"></label>
+                            <input asp-for="Email" class="name" placeholder="@T("Vendors.ApplyAccount.Email.Hint")" />
+                            <nop-required />
+                            <span asp-validation-for="Email"></span>
+                        </div>
+                        @*[Mahjar vendor-application] partner type + the KSA identity document that matches it*@
+                        <div class="inputs vendor-type">
+                            <label asp-for="VendorTypeId" asp-postfix=":"></label>
+                            <span class="vendor-type-options">
+                                @foreach (var vendorType in Model.AvailableVendorTypes)
+                                {
+                                    <span class="vendor-type-option">
+                                        <input type="radio" asp-for="VendorTypeId" value="@vendorType.Value" id="vendor-type-@vendorType.Value" />
+                                        <label for="vendor-type-@vendorType.Value">@vendorType.Text</label>
+                                    </span>
+                                }
+                            </span>
+                            <nop-required />
+                            <span asp-validation-for="VendorTypeId"></span>
+                        </div>
+                        <div class="inputs" id="vendor-national-id">
+                            <label asp-for="NationalId" asp-postfix=":"></label>
+                            <input asp-for="NationalId" class="name" placeholder="@T("Vendors.ApplyAccount.NationalId.Hint")" />
+                            <nop-required />
+                            <span asp-validation-for="NationalId"></span>
+                        </div>
+                        <div class="inputs" id="vendor-cr-number">
+                            <label asp-for="CommercialRegistrationNumber" asp-postfix=":"></label>
+                            <input asp-for="CommercialRegistrationNumber" class="name" placeholder="@T("Vendors.ApplyAccount.CommercialRegistrationNumber.Hint")" />
+                            <nop-required />
+                            <span asp-validation-for="CommercialRegistrationNumber"></span>
+                        </div>
+                        <div class="inputs">
+                            <label asp-for="VatNumber" asp-postfix=":"></label>
+                            <input asp-for="VatNumber" class="name" placeholder="@T("Vendors.ApplyAccount.VatNumber.Hint")" />
+                            <span asp-validation-for="VatNumber"></span>
+                        </div>
+                        @*[Mahjar partner-agreement] the corporate agreement names the person authorised to sign
+                            for the company, and the capacity they sign in; an individual signs for themselves*@
+                        <div class="inputs" id="vendor-signatory-name">
+                            <label asp-for="AuthorizedSignatoryName" asp-postfix=":"></label>
+                            <input asp-for="AuthorizedSignatoryName" class="name" placeholder="@T("Vendors.ApplyAccount.AuthorizedSignatoryName.Hint")" />
+                            <span asp-validation-for="AuthorizedSignatoryName"></span>
+                        </div>
+                        <div class="inputs" id="vendor-signatory-capacity">
+                            <label asp-for="AuthorizedSignatoryCapacity" asp-postfix=":"></label>
+                            <input asp-for="AuthorizedSignatoryCapacity" class="name" placeholder="@T("Vendors.ApplyAccount.AuthorizedSignatoryCapacity.Hint")" />
+                            <span asp-validation-for="AuthorizedSignatoryCapacity"></span>
+                        </div>
+                        @*[Mahjar partner-agreement] the "الخدمات المفعلة" row of the agreement — a service annex
+                            binds the partner only while that service is activated, so this is what they accept*@
+                        <div class="inputs partner-services">
+                            <label>@T("Vendors.ApplyAccount.ActivatedServices"):</label>
+                            <span class="partner-services-options">
+                                <span class="partner-services-option">
+                                    <input asp-for="ActivateRental" id="activate-rental" />
+                                    <label for="activate-rental">@T("Vendors.ApplyAccount.ActivateRental")</label>
+                                </span>
+                                <span class="partner-services-option">
+                                    <input asp-for="ActivateSale" id="activate-sale" />
+                                    <label for="activate-sale">@T("Vendors.ApplyAccount.ActivateSale")</label>
+                                </span>
+                            </span>
+                            <nop-required />
+                            <span class="partner-services-hint">@T("Vendors.ApplyAccount.ActivatedServices.Hint")</span>
+                        </div>
+                        <script asp-location="Footer">
+                            $(function() {
+                                //[Mahjar vendor-application] show only the identity field the chosen type needs.
+                                //Driven off whatever is checked right now, so a server-side validation re-render
+                                //keeps the applicant's choice instead of collapsing both rows.
+                                //[Mahjar partner-agreement] the same switch swaps the signatory rows and the
+                                //agreement body, so the applicant always reads the document of their own type.
+                                function mahjarToggleVendorIdentity() {
+                                    var selected = $('input[name="VendorTypeId"]:checked').val();
+                                    var isIndividual = selected === '@((int)Nop.Core.Domain.Vendors.VendorType.Individual)';
+                                    var isCorporation = selected === '@((int)Nop.Core.Domain.Vendors.VendorType.Corporation)';
+                                    $('#vendor-national-id').toggle(isIndividual);
+                                    $('#vendor-cr-number').toggle(isCorporation);
+                                    $('#vendor-signatory-name').toggle(isCorporation);
+                                    $('#vendor-signatory-capacity').toggle(isCorporation);
+                                    $('#partner-agreement-individual').toggle(isIndividual);
+                                    $('#partner-agreement-corporate').toggle(isCorporation);
+                                }
+                                $('input[name="VendorTypeId"]').on('change', mahjarToggleVendorIdentity);
+                                mahjarToggleVendorIdentity();
+                            });
+                        </script>
+                        <div class="inputs">
+                            <label asp-for="Description" asp-postfix=":"></label>
+                            <textarea asp-for="Description" class="description"></textarea>
+                        </div>
+                        <div class="inputs">
+                            <label>@T("Vendors.ApplyAccount.Picture"):</label>
+                            <input name="uploadedFile" type="file" accept="image/*" />
+                        </div>
+                        @await Html.PartialAsync("_VendorAttributes", Model.VendorAttributes)
+                        @if (Model.DisplayCaptcha)
+                        {
+                            <nop-captcha />
+                        }
+                        @if (Model.TermsOfServiceEnabled)
+                        {
+                            <script asp-location="Footer">
+                                $(function() {
+                                    $('#apply-vendor').on('click', function() {
+                                        if ($('#termsofservice').is(':checked')) {
+                                            //do some stuff
+                                            return true;
+                                        } else {
+                                            //just show validation errors, dont post
+                                            alert('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Vendors.ApplyAccount.AcceptTermsOfService.Required").Text))');
+                                            return false;
+                                        }
+                                    });
+                                });
+                            </script>
+                            @*[Mahjar partner-agreement] the master agreement of the applicant's type, rendered in
+                                full with its commercial schedule already filled in from the settings. Both are
+                                emitted and the script above shows the matching one. It replaces the short terms
+                                body, which stays as the fallback for a store that has not installed the documents*@
+                            @if (Model.AgreementEnabled)
+                            {
+                                <div class="terms-of-service-box partner-agreement-box" id="partner-agreement-individual">
+                                    <div class="terms-of-service-box-title">
+                                        @T("Vendors.ApplyAccount.Agreement.Title")
+                                        @if (!string.IsNullOrEmpty(Model.AgreementVersion))
+                                        {
+                                            <span class="partner-agreement-version">@T("Vendors.ApplyAccount.Agreement.Version", Model.AgreementVersion)</span>
+                                        }
+                                    </div>
+                                    <div class="terms-of-service-box-body partner-agreement-body">@Html.Raw(Model.IndividualAgreementHtml)</div>
+                                </div>
+                                <div class="terms-of-service-box partner-agreement-box" id="partner-agreement-corporate">
+                                    <div class="terms-of-service-box-title">
+                                        @T("Vendors.ApplyAccount.Agreement.Title")
+                                        @if (!string.IsNullOrEmpty(Model.AgreementVersion))
+                                        {
+                                            <span class="partner-agreement-version">@T("Vendors.ApplyAccount.Agreement.Version", Model.AgreementVersion)</span>
+                                        }
+                                    </div>
+                                    <div class="terms-of-service-box-body partner-agreement-body">@Html.Raw(Model.CorporateAgreementHtml)</div>
+                                </div>
+                                @*[Mahjar partner-request] keep the agreement in step with the form. The
+                                    applicant's own fields were rendered as marked spans (see
+                                    PartnerAgreementContext.MarkLiveFields), so the document shows what has been
+                                    typed instead of a row of dashes — the applicant reads the agreement they are
+                                    actually accepting. Text is written with .text(), never .html(), so nothing
+                                    typed into the form can inject markup into the document.*@
+                                <script asp-location="Footer">
+                                    $(function () {
+                                        var emptyValue = '—';
+                                        var serviceNames = {
+                                            none: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.services.none").Text))',
+                                            rental: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.services.rental").Text))',
+                                            sale: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.services.sale").Text))',
+                                            both: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.services.both").Text))'
+                                        };
+                                        var annexNames = {
+                                            master: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.annexes.master").Text))',
+                                            rental: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.annexes.rental").Text))',
+                                            sale: '@Html.Raw(JavaScriptEncoder.Default.Encode(T("mahjar.partneragreement.annexes.sale").Text))'
+                                        };
+
+                                        function setField(name, value) {
+                                            $('[data-mahjar-field="' + name + '"]').text(value ? value : emptyValue);
+                                        }
+
+                                        function partnerTypeName() {
+                                            var checked = $('input[name="VendorTypeId"]:checked');
+                                            return checked.length ? $.trim($('label[for="' + checked.attr('id') + '"]').text()) : '';
+                                        }
+
+                                        function refreshAgreement() {
+                                            setField('Partner.Name', $.trim($('#Name').val()));
+                                            setField('Partner.Email', $.trim($('#Email').val()));
+                                            setField('Partner.NationalId', $.trim($('#NationalId').val()));
+                                            setField('Partner.CommercialRegistration', $.trim($('#CommercialRegistrationNumber').val()));
+                                            setField('Partner.VatNumber', $.trim($('#VatNumber').val()));
+                                            setField('Partner.SignatoryName', $.trim($('#AuthorizedSignatoryName').val()));
+                                            setField('Partner.SignatoryCapacity', $.trim($('#AuthorizedSignatoryCapacity').val()));
+
+                                            var type = partnerTypeName();
+                                            setField('Partner.Type', type);
+                                            setField('Partner.LegalForm', type);
+
+                                            var rental = $('#activate-rental').is(':checked');
+                                            var sale = $('#activate-sale').is(':checked');
+                                            var services = rental && sale ? serviceNames.both
+                                                : rental ? serviceNames.rental
+                                                : sale ? serviceNames.sale
+                                                : serviceNames.none;
+                                            setField('Partner.ActivatedServices', services);
+
+                                            var annexes = [annexNames.master];
+                                            if (rental) annexes.push(annexNames.rental);
+                                            if (sale) annexes.push(annexNames.sale);
+                                            setField('Agreement.AcceptedAnnexes', annexes.join('، '));
+                                        }
+
+                                        $('#Name, #Email, #NationalId, #CommercialRegistrationNumber, #VatNumber, #AuthorizedSignatoryName, #AuthorizedSignatoryCapacity')
+                                            .on('input change', refreshAgreement);
+                                        $('input[name="VendorTypeId"], #activate-rental, #activate-sale').on('change', refreshAgreement);
+                                        refreshAgreement();
+                                    });
+                                </script>
+                            }
+                            else if (!string.IsNullOrEmpty(Model.TermsOfServiceHtml))
+                            {
+                                @*[Mahjar vendor-application] the short terms body is a localized setting edited
+                                    in Admin -> Settings -> Vendor settings, rendered inline so the applicant
+                                    reads what they are agreeing to without leaving a half-filled form*@
+                                <div class="terms-of-service-box">
+                                    <div class="terms-of-service-box-title">@T("Vendors.ApplyAccount.TermsOfService.Title")</div>
+                                    <div class="terms-of-service-box-body">@Html.Raw(Model.TermsOfServiceHtml)</div>
+                                </div>
+                            }
+                            <div class="terms-of-service">
+                                @*bound to the model so acceptance is validated server-side; the id is kept so the
+                                    script above keeps working*@
+                                <input asp-for="AcceptTermsOfService" id="termsofservice" />
+                                <label for="termsofservice">
+                                    @(Model.AgreementEnabled
+                                        ? T("Vendors.ApplyAccount.AcceptAgreement")
+                                        : T("Vendors.ApplyAccount.AcceptTermsOfService"))
+                                </label>
+                                @*the topic link is only a fallback for a store that has not filled the setting in*@
+                                @if (!Model.AgreementEnabled && string.IsNullOrEmpty(Model.TermsOfServiceHtml))
+                                {
+                                @if (Model.TermsOfServicePopup)
+                                {
+                                    <span class="read" id="read-acceptterms">@T("Vendors.ApplyAccount.AcceptTermsOfService.Read")</span>
+                                    <script asp-location="Footer">
+                                        $(function() {
+                                            $('#read-acceptterms').on('click',
+                                                function (e) {
+                                                    displayPopupContentFromUrl(
+                                                        '@Url.RouteUrl("TopicPopup", new {SystemName = "VendorTermsOfService"})',
+                                                        '@T("Vendors.ApplyAccount.AcceptTermsOfService")');
+                                                });
+                                        });
+                                    </script>
+                                }
+                                else
+                                {
+                                    <a class="read" id="read-acceptterms" href="@Url.RouteTopicUrl("VendorTermsOfService")">@T("Vendors.ApplyAccount.AcceptTermsOfService.Read")</a>
+                                }
+                                }
+                                <span asp-validation-for="AcceptTermsOfService"></span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button type="submit" id="apply-vendor" name="apply-vendor" class="button-1 apply-vendor-button">@T("Vendors.ApplyAccount.Button")</button>
+                </div>
+            </form>
+        }
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ApplyVendorBottom, additionalData = Model })
+    </div>
+</div>

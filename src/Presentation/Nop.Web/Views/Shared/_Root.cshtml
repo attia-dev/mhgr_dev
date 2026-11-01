@@ -1,0 +1,43 @@
+﻿@{
+    Layout = "_Root.Head";
+}
+@await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.BodyStartHtmlTagAfter })
+@{ await Html.RenderPartialAsync("_Notifications"); }
+@{ await Html.RenderPartialAsync("_JavaScriptDisabledWarning"); }
+<div class="master-wrapper-page">
+    @await Component.InvokeAsync(typeof(AdminHeaderLinksViewComponent))
+    @*[Mahjar home-motion] the masthead: header + menu bar in one wrapper so that, from 1001px, mahjar.masthead.js can
+      turn it into a slim sticky bar (the utility row and the logo row scroll away, the menu bar stays with a mini logo),
+      glass once scrolled, hidden while scrolling down and back on scroll-up. Without JS it is the plain static header.*@
+    <div class="mhx-masthead" id="mhx-masthead">
+    @{ await Html.RenderPartialAsync("_Header"); }
+    <script asp-location="Footer">
+        var localized_data = {
+            AjaxCartFailure: "@T("AjaxCart.Failure")"
+        };
+        AjaxCart.init(false, '.header-links .cart-qty', '.header-links .wishlist-qty', '#flyout-cart', localized_data);
+    </script>
+    <div class="header-menu">
+        @await Component.InvokeAsync(typeof(TopMenuViewComponent))
+    </div>
+    <div class="mhx-masthead__mini">
+        @await Component.InvokeAsync(typeof(LogoViewComponent))
+    </div>
+    </div>
+    <script asp-location="Footer" src="~/js/mahjar.masthead.js"></script>
+    <div class="master-wrapper-content" id="main" role="main">
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ContentBefore })
+
+        @if (IsSectionDefined("Breadcrumb"))
+        {
+            @RenderSection("Breadcrumb") 
+        }
+        <div class="master-column-wrapper">
+            @RenderBody()
+        </div>
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ContentAfter })
+    </div>
+    @await Component.InvokeAsync(typeof(FooterViewComponent))
+</div>
+@await Component.InvokeAsync(typeof(EuCookieLawViewComponent))
+@await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.BodyEndHtmlTagBefore })

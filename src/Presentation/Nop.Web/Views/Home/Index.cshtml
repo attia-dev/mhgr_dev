@@ -1,0 +1,129 @@
+﻿@using Nop.Services.Localization
+@using Nop.Core
+@using Nop.Core.Domain.Vendors
+@using Nop.Core.Domain.Mahjar
+@inject ILocalizationService localizationService
+@inject IStoreContext storeContext
+@inject VendorSettings vendorSettings
+@inject IWorkContext workContext
+
+@{
+    Layout = "_ColumnsOne";
+
+    var homepageTitle = await localizationService.GetLocalizedAsync(await storeContext.GetCurrentStoreAsync(), s => s.HomepageTitle);
+
+    //title
+    if (!string.IsNullOrEmpty(homepageTitle))
+    {
+        NopHtml.AddTitleParts(homepageTitle);
+    }
+
+    var homepageDescription = await localizationService.GetLocalizedAsync(await storeContext.GetCurrentStoreAsync(), s => s.HomepageDescription);
+
+    //meta
+    if (!string.IsNullOrEmpty(homepageDescription))
+    {
+        NopHtml.AddMetaDescriptionParts(homepageDescription);
+    }
+
+    //page class
+    NopHtml.AppendPageCssClassParts("html-home-page");
+}
+@*[Mahjar home-motion] "Living Home": one stylesheet + one vanilla script drive the whole page (hero carousel, marquee,
+  parallax bands, the single reveal system, the scroll-progress hairline). The <link> is hoisted into the head bundle
+  after styles.rtl.css / styles.css; the script goes to the footer bundle.*@
+<link rel="stylesheet" href="~/Themes/DefaultClean/Content/css/mahjar.home.css" />
+@{
+    //[Mahjar home-motion] the trust marquee — watches only, partners (never sellers)
+    var marqueeKeys = new[]
+    {
+        "Mahjar.Home.Marquee.Authenticity",
+        "Mahjar.Home.Marquee.OwnOrRent",
+        "Mahjar.Home.Marquee.Deposit",
+        "Mahjar.Home.Marquee.Partners",
+        "Mahjar.Home.Marquee.Inspection",
+        "Mahjar.Home.Marquee.Curated"
+    };
+    var showSellerCta = vendorSettings.AllowCustomersToApplyForVendorAccount && (await workContext.GetCurrentCustomerAsync()).VendorId == 0;
+}
+<div class="page home-page">
+    <div class="page-body">
+        @*[Mahjar home-motion] thin scroll-progress hairline at the top of the viewport*@
+        <div class="mhx-progress" aria-hidden="true"><span class="mhx-progress__bar"></span></div>
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageTop })
+        @*[Mahjar home-motion] the admin-managed Hero carousel (falls back to the HomepageText topic when there is no slide)*@
+        @await Component.InvokeAsync(typeof(HomeSlidesViewComponent), new { placement = HomeSlidePlacement.Hero })
+        @*[Mahjar home-motion] trust marquee: a seamless slow ticker right under the hero (the scroll cue lands here)*@
+        <section class="mhx-marquee" id="mhx-after-hero" aria-label="@T("Mahjar.Home.Marquee.Label")">
+            <ul class="mhx-sr">
+                @foreach (var key in marqueeKeys)
+                {
+                    <li>@T(key)</li>
+                }
+            </ul>
+            <div class="mhx-marquee__track" aria-hidden="true">
+                @for (var group = 0; group < 2; group++)
+                {
+                    <div class="mhx-marquee__group">
+                        @for (var repeat = 0; repeat < 2; repeat++)
+                        {
+                            foreach (var key in marqueeKeys)
+                            {
+                                <span class="mhx-marquee__item">@T(key)</span><span class="mhx-marquee__dia"></span>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+            @*[Mahjar home-motion] a real pause control (WCAG 2.2.2): hover alone serves neither keyboard nor touch*@
+            <button type="button" class="mhx-marquee__toggle" aria-pressed="false" aria-label="@T("Mahjar.Home.Marquee.Pause")"
+                    data-label-pause="@T("Mahjar.Home.Marquee.Pause")" data-label-play="@T("Mahjar.Home.Marquee.Play")">
+                <svg class="mhx-ico-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6v12M15 6v12" /></svg>
+                <svg class="mhx-ico-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 6l10 6-10 6z" /></svg>
+            </button>
+        </section>
+        @*[Mahjar home-motion] "Own or Rent" — the two paths of the store as one editorial band*@
+        @await Component.InvokeAsync(typeof(HomeOwnRentViewComponent))
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeCategories })
+        @await Component.InvokeAsync(typeof(HomepageCategoriesViewComponent))
+        @*[Mahjar home-motion] full-bleed parallax Feature bands (admin Home slides with the Feature placement; nothing when none)*@
+        @await Component.InvokeAsync(typeof(HomeSlidesViewComponent), new { placement = HomeSlidePlacement.Feature })
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeProducts })
+        @await Component.InvokeAsync(typeof(HomepageProductsViewComponent))
+        @*[Mahjar shop-by-seller] partner cards — [Mahjar home-motion] moved after the featured watches (buyers first)*@
+        @await Component.InvokeAsync(typeof(HomepageVendorsViewComponent))
+        @*[Mahjar seller-cta] prominent "become a partner" call-to-action on the home page (the apply link also lives in the footer).
+          Hidden once the customer has applied: VendorId>0 covers BOTH a pending (inactive) application and an approved vendor —
+          GetCurrentVendorAsync() alone would keep showing it to pending applicants since it filters out inactive vendors.
+          [Mahjar home-motion] moved below the featured watches and the partners (a buyer sees watches first), restyled in
+          mahjar.home.css (dark band + brass hairline) and no longer 634px tall on phones (the text column no longer takes
+          a 480px flex-basis once the row stacks).*@
+        @if (showSellerCta)
+        {
+            <section class="mhgr-seller-cta mhx-rv">
+                <div class="mhgr-seller-cta-inner">
+                    <div class="mhgr-seller-cta-text">
+                        <p class="mhgr-seller-cta-eyebrow">@T("Mahjar.Home.SellerCta.Eyebrow")</p>
+                        <h2 class="mhx-display">@T("Mahjar.Home.SellerCta.Title")</h2>
+                        <p>@T("Mahjar.Home.SellerCta.Text")</p>
+                    </div>
+                    <a class="mhgr-seller-cta-btn" href="@Url.RouteUrl("ApplyVendorAccount")">
+                        <span>@T("Mahjar.Home.SellerCta.Button")</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                    </a>
+                </div>
+            </section>
+        }
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeBestSellers })
+        @await Component.InvokeAsync(typeof(HomepageBestSellersViewComponent))
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeNews })
+        @await Component.InvokeAsync(typeof(HomepageNewsViewComponent))
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforePoll })
+        @await Component.InvokeAsync(typeof(HomepagePollsViewComponent))
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBottom })
+    </div>
+</div>
+
+@*[Mahjar home-motion] ONE reveal system + all home motion (replaces the former [Mahjar home-animations] inline
+  scroll-reveal; the customheadtags .mh-reveal is neutralised on this page by mahjar.home.css)*@
+<script asp-location="Footer" src="~/js/mahjar.home.js"></script>

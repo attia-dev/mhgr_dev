@@ -1,0 +1,232 @@
+@* [Mahjar handover] the handover desk: one work queue per stage *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HandoverSearchModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.handover.list.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Mahjar handovers");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("admin.mahjar.handover.list.title")
+    </h1>
+    <div class="float-right">
+        <a asp-action="Intake" class="btn btn-primary">
+            <i class="fas fa-box-open"></i>
+            @T("admin.mahjar.handover.intake.new")
+        </a>
+    </div>
+</div>
+@* starting a check creates a row, so it is posted (the form tag helper adds the antiforgery token) *@
+<form asp-controller="Handover" asp-action="Open" method="post" id="handover-open-form">
+    <input type="hidden" name="type" id="handover-open-type" />
+    <input type="hidden" name="productId" id="handover-open-product" />
+    <input type="hidden" name="contractRequestId" id="handover-open-contract" />
+    <input type="hidden" name="orderItemId" id="handover-open-orderitem" />
+</form>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default card-search">
+                    <div class="card-body">
+                        <p class="text-muted">@T("admin.mahjar.handover.list.hint")</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="StageId" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-select asp-for="StageId" asp-items="Model.AvailableStages" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchKeyword" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-editor asp-for="SearchKeyword" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchAssignedCustomerId" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-select asp-for="SearchAssignedCustomerId" asp-items="Model.AvailableAssignees" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchStatusId" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-select asp-for="SearchStatusId" asp-items="Model.AvailableStatuses" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchStartDate" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-editor asp-for="SearchStartDate" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchEndDate" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-editor asp-for="SearchEndDate" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-4">
+                                        <nop-label asp-for="SearchOverdueOnly" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <nop-editor asp-for="SearchOverdueOnly" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="text-center col-12">
+                                <button type="button" id="search-handovers" class="btn btn-primary btn-search">
+                                    <i class="fas fa-magnifying-glass"></i>
+                                    @T("Admin.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "handovers-grid",
+                            UrlRead = new DataUrl("List", "Handover", null),
+                            SearchButtonId = "search-handovers",
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            Filters = new List<FilterParameter>
+                            {
+                                new FilterParameter(nameof(Model.StageId)),
+                                new FilterParameter(nameof(Model.SearchKeyword)),
+                                new FilterParameter(nameof(Model.SearchAssignedCustomerId)),
+                                new FilterParameter(nameof(Model.SearchStatusId)),
+                                new FilterParameter(nameof(Model.SearchStartDate), typeof(DateTime?)),
+                                new FilterParameter(nameof(Model.SearchEndDate), typeof(DateTime?)),
+                                new FilterParameter(nameof(Model.SearchOverdueOnly), typeof(bool))
+                            },
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(HandoverTaskModel.CheckType))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.type").Text,
+                                    Width = "140"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.ProductName))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.product").Text,
+                                    Width = "220"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.Reference))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.reference").Text,
+                                    Width = "180"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.CustomerInfo))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.customer").Text,
+                                    Width = "220",
+                                    Render = new RenderCustom("renderHandoverCustomer")
+                                },
+                                @* [Mahjar handover] who this order's handover belongs to *@
+                                new ColumnProperty(nameof(HandoverTaskModel.AssigneeInfo))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.assignedto").Text,
+                                    Width = "180"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.Period))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.period").Text,
+                                    Width = "180",
+                                    Render = new RenderCustom("renderHandoverPeriod")
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.Status))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.status").Text,
+                                    Width = "110"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.Media))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.media").Text,
+                                    Width = "130"
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.Date))
+                                {
+                                    Title = T("admin.mahjar.handover.fields.date").Text,
+                                    Width = "140",
+                                    Render = new RenderDate()
+                                },
+                                new ColumnProperty(nameof(HandoverTaskModel.CheckId))
+                                {
+                                    Title = T("admin.mahjar.handover.open").Text,
+                                    Width = "90",
+                                    ClassName = NopColumnClassDefaults.Button,
+                                    Render = new RenderCustom("renderHandoverOpen")
+                                }
+                            }
+                        })
+
+                        <script asp-location="Footer">
+                            function renderHandoverCustomer(data, type, row, meta) {
+                                if (!row.CustomerId) {
+                                    return '';
+                                }
+                                var textRenderer = $.fn.dataTable.render.text().display;
+                                return '<a href="@Url.Content("~/Admin/Customer/Edit/")' + row.CustomerId + '">' + textRenderer(row.CustomerInfo) + '</a>';
+                            }
+
+                            function renderHandoverPeriod(data, type, row, meta) {
+                                var textRenderer = $.fn.dataTable.render.text().display;
+                                var text = textRenderer(row.Period || '');
+                                return row.IsOverdue ? '<span class="badge bg-danger">' + text + '</span>' : text;
+                            }
+
+                            //a started check opens with a plain GET; starting one creates a row, so it is an
+                            //antiforgery-protected POST through the hidden form below (the ids are JSON integers)
+                            function renderHandoverOpen(data, type, row, meta) {
+                                if (row.CheckId) {
+                                    return '<a class="btn btn-default" href="@Url.Content("~/Admin/Handover/Check/")' + row.CheckId + '"><i class="fas fa-camera"></i> @T("admin.mahjar.handover.open")</a>';
+                                }
+                                return '<button type="button" class="btn btn-primary" onclick="startHandover(' +
+                                    parseInt(row.CheckTypeId, 10) + ',' + parseInt(row.ProductId, 10) + ',' +
+                                    parseInt(row.ContractRequestId, 10) + ',' + parseInt(row.OrderItemId, 10) +
+                                    ')"><i class="fas fa-camera"></i> @T("admin.mahjar.handover.open")</button>';
+                            }
+
+                            function startHandover(type, productId, contractRequestId, orderItemId) {
+                                $('#handover-open-type').val(type);
+                                $('#handover-open-product').val(productId);
+                                $('#handover-open-contract').val(contractRequestId);
+                                $('#handover-open-orderitem').val(orderItemId);
+                                $('#handover-open-form').submit();
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

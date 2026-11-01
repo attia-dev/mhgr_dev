@@ -1,0 +1,150 @@
+@model ProductModel
+
+@using Nop.Core.Domain.Mahjar
+@using Nop.Services
+
+@*[Mahjar item-status] Condition notes: what is damaged, worn, repaired, missing or included. The grid can only
+    inline-edit scalar columns, so the kind and the severity are picked once in the form below and then shown as
+    read-only localized text — editing them would mean typing raw enum numbers into a cell, which is worse than
+    deleting the note and adding it again.*@
+<div class="card-body">
+    @await Html.PartialAsync("Table", new DataTablesModel
+    {
+        Name = "productitemstatusnotes-grid",
+        UrlRead = new DataUrl("ProductItemStatusNoteList", "Product", new RouteValueDictionary { [nameof(Model.ItemStatusNoteSearchModel.ProductId)] = Model.ItemStatusNoteSearchModel.ProductId }),
+        UrlDelete = new DataUrl("ProductItemStatusNoteDelete", "Product", null),
+        UrlUpdate = new DataUrl("ProductItemStatusNoteUpdate", "Product", null),
+        Length = Model.ItemStatusNoteSearchModel.PageSize,
+        LengthMenu = Model.ItemStatusNoteSearchModel.AvailablePageSizes,
+        ColumnCollection = new List<ColumnProperty>
+        {
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.NoteTypeName))
+            {
+                Title = T("Admin.Catalog.Products.ItemStatus.Fields.NoteType").Text,
+                Width = "150"
+            },
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.SeverityName))
+            {
+                Title = T("Admin.Catalog.Products.ItemStatus.Fields.Severity").Text,
+                Width = "150"
+            },
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.Text))
+            {
+                Title = T("Admin.Catalog.Products.ItemStatus.Fields.Text").Text,
+                Width = "400",
+                Editable = true,
+                EditType = EditType.String
+            },
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.DisplayOrder))
+            {
+                Title = T("Admin.Catalog.Products.ItemStatus.Fields.DisplayOrder").Text,
+                Width = "150",
+                ClassName = NopColumnClassDefaults.CenterAll,
+                Editable = true,
+                EditType = EditType.Number
+            },
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.Id))
+            {
+                Title = T("Admin.Common.Edit").Text,
+                Width = "200",
+                ClassName = NopColumnClassDefaults.Button,
+                Render = new RenderButtonsInlineEdit()
+            },
+            new ColumnProperty(nameof(ProductItemStatusNoteModel.Id))
+            {
+                Title = T("Admin.Common.Delete").Text,
+                Width = "100",
+                Render = new RenderButtonRemove(T("Admin.Common.Delete").Text),
+                ClassName = NopColumnClassDefaults.Button
+            }
+        }
+    })
+
+    <div class="card card-default">
+        <div class="card-header">
+            @T("Admin.Catalog.Products.ItemStatus.Notes.AddNew")
+        </div>
+        <div class="card-body">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AddItemStatusNoteModel.NoteTypeId" />
+                </div>
+                <div class="col-md-9">
+                    <nop-select asp-for="AddItemStatusNoteModel.NoteTypeId" asp-items="@(await ((ItemStatusNoteType)Model.AddItemStatusNoteModel.NoteTypeId).ToSelectListAsync())" />
+                    <span asp-validation-for="AddItemStatusNoteModel.NoteTypeId"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AddItemStatusNoteModel.SeverityId" />
+                </div>
+                <div class="col-md-9">
+                    <nop-select asp-for="AddItemStatusNoteModel.SeverityId" asp-items="@(await ((ItemStatusNoteSeverity)Model.AddItemStatusNoteModel.SeverityId).ToSelectListAsync())" />
+                    <span asp-validation-for="AddItemStatusNoteModel.SeverityId"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AddItemStatusNoteModel.Text" />
+                </div>
+                <div class="col-md-9">
+                    <nop-textarea asp-for="AddItemStatusNoteModel.Text" />
+                    <span asp-validation-for="AddItemStatusNoteModel.Text"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AddItemStatusNoteModel.DisplayOrder" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="AddItemStatusNoteModel.DisplayOrder" />
+                    <span asp-validation-for="AddItemStatusNoteModel.DisplayOrder"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-9 offset-md-3">
+                    <button type="button" id="addProductItemStatusNote" class="btn btn-primary">
+                        @T("Admin.Catalog.Products.ItemStatus.Notes.AddNew")
+                    </button>
+                </div>
+            </div>
+        </div>
+        <script>
+            $(function () {
+                $('#addProductItemStatusNote').click(function () {
+                    $('#addProductItemStatusNote').attr('disabled', true);
+
+                    var postData = {
+                        NoteTypeId: $("#@Html.IdFor(model => model.AddItemStatusNoteModel.NoteTypeId)").val(),
+                        SeverityId: $("#@Html.IdFor(model => model.AddItemStatusNoteModel.SeverityId)").val(),
+                        Text: $("#@Html.IdFor(model => model.AddItemStatusNoteModel.Text)").val(),
+                        DisplayOrder: $("#@Html.IdFor(model => model.AddItemStatusNoteModel.DisplayOrder)").val()
+                    };
+                    addAntiForgeryToken(postData);
+
+                    $.ajax({
+                        cache: false,
+                        type: "POST",
+                        url: "@Html.Raw(Url.Action("ProductItemStatusNoteAdd", "Product", new { productId = Model.Id }))",
+                        data: postData,
+                        success: function (data, textStatus, jqXHR) {
+                            if (data.success) {
+                                //reload grid
+                                updateTable('#productitemstatusnotes-grid');
+
+                                //clear input value
+                                $("#@Html.IdFor(model => model.AddItemStatusNoteModel.Text)").val('');
+                            } else {
+                                //display errors if returned
+                                display_nop_error(data);
+                            }
+                        },
+                        complete: function (jqXHR, textStatus) {
+                            $('#addProductItemStatusNote').attr('disabled', false);
+                        }
+                    });
+                });
+            });
+        </script>
+    </div>
+</div>

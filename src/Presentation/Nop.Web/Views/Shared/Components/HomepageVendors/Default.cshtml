@@ -1,0 +1,77 @@
+@model HomepageVendorsModel
+@using Nop.Core.Domain.Vendors
+
+@*[Mahjar shop-by-seller] paginated grid of seller cards with a storefront-icon brand badge, shown before the home-page categories*@
+<div class="mhgr-sellers" id="mhgr-sellers">
+    <style>
+        .mhgr-sellers { margin: 0 0 42px; }
+        .mhgr-sellers-head { text-align: center; margin: 0 0 28px; }
+        .mhgr-sellers-head h2 { font-size: 30px; font-weight: 700; color: #2b2521; margin: 0 0 6px; }
+        .mhgr-sellers-head .sub { color: #8a7a68; font-size: 15px; }
+        .mhgr-sellers-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; }
+        .mhgr-seller-card { display: flex; flex-direction: column; align-items: center; width: 168px; text-decoration: none; }
+        .mhgr-seller-card:hover { text-decoration: none; }
+        .mhgr-seller-badge { position: relative; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at 50% 32%, #443a31, #2b2521 75%); box-shadow: 0 8px 22px rgba(43,37,33,.22);
+            margin-bottom: 16px; transition: transform .22s ease, box-shadow .22s ease; }
+        .mhgr-seller-badge::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; border: 1px solid rgba(245,240,230,.30); }
+        .mhgr-seller-badge svg { width: 50px; height: 50px; color: #f1e9da; }
+        .mhgr-seller-badge img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .mhgr-seller-card:hover .mhgr-seller-badge { transform: translateY(-5px); box-shadow: 0 16px 32px rgba(43,37,33,.32); }
+        .mhgr-seller-card:hover .mhgr-seller-badge::after { border-color: rgba(245,240,230,.6); }
+        .mhgr-seller-name { color: #2b2521; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.4; }
+        .mhgr-seller-card:hover .mhgr-seller-name { color: #5a4a3a; }
+        .mhgr-sellers-pager { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
+        .mhgr-sellers-pager a { min-width: 38px; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd2c4; color: #2b2521; text-decoration: none; font-weight: 600; text-align: center; }
+        .mhgr-sellers-pager a:hover { background: #f0e9dd; text-decoration: none; }
+        .mhgr-sellers-pager a.active { background: #2b2521; color: #f5f0e6; border-color: #2b2521; }
+        @@media (max-width: 480px) { .mhgr-seller-card { width: 132px; } .mhgr-seller-badge { width: 104px; height: 104px; } .mhgr-seller-badge svg { width: 44px; height: 44px; } }
+    </style>
+
+    @*[Mahjar home-motion] the unified home section heading (eyebrow + title + brass hairline) — styled in mahjar.home.css*@
+    <header class="mhgr-sellers-head mhx-head mhx-rv">
+        <p class="mhx-head__eyebrow">@T("Mahjar.Home.Partners.Eyebrow")</p>
+        <h2 class="mhx-head__title mhx-display">@T("Mahjar.Home.ShopBySeller")</h2>
+        <span class="mhx-head__line" aria-hidden="true"></span>
+        <p class="sub mhx-head__sub">@T("Mahjar.Home.ShopBySeller.Sub")</p>
+    </header>
+
+    @*[Mahjar home-motion] the row reveals as ONE block: on the home page it is a sideways scroller, and cards outside
+      its visible width would never intersect the viewport through its clip (they stayed hidden, and their offset
+      made the row scroll vertically)*@
+    <div class="mhgr-sellers-grid mhx-rv">
+        @foreach (var vendor in Model.Vendors)
+        {
+            <a class="mhgr-seller-card" href="@(Url.RouteUrl<Vendor>(new { SeName = vendor.SeName }))" title="@vendor.Name">
+                <span class="mhgr-seller-badge">
+                    @if (!string.IsNullOrEmpty(vendor.PictureUrl))
+                    {
+                        <img src="@vendor.PictureUrl" alt="@vendor.Name" loading="lazy" />
+                    }
+                    else
+                    {
+                    @*storefront / boutique line icon (Lucide "store", ISC license)*@
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                        <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                        <path d="M2 7h20" />
+                        <path d="M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7" />
+                    </svg>
+                    }
+                </span>
+                <span class="mhgr-seller-name"><bdi>@vendor.Name</bdi></span>
+            </a>
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="mhgr-sellers-pager">
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                <a class="@(i == Model.PageIndex ? "active" : null)" href="@Url.RouteUrl("Homepage", new { sellerpage = i }, null, null, "mhgr-sellers")">@i</a>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,84 @@
+@model Nop.Web.Areas.Admin.Models.Notification.NotificationListModel
+@*[Mahjar notifications] admin/vendor full notification list*@
+@{
+    Layout = "_AdminLayout";
+    NopHtml.SetActiveMenuItemSystemName("Notifications");
+    ViewBag.PageTitle = T("mahjar.notifications.title").Text;
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("mahjar.notifications.title")
+    </h1>
+    <div class="float-right">
+        @if (Model.Items.Count > 0)
+        {
+            <a href="#" class="btn btn-secondary mark-all-read-page"
+               data-mark-all-url="@Url.Action("MarkAllRead", "Notification", new { area = "Admin" })">
+                <i class="far fa-check-circle"></i> @T("mahjar.notifications.markallread")
+            </a>
+        }
+        <a href="@Url.Action("Settings", "Notification", new { area = "Admin" })" class="btn btn-secondary">
+            <i class="fas fa-cog"></i> @T("mahjar.notifications.settings.title")
+        </a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card card-default">
+        <div class="card-body">
+            @if (Model.Items.Count == 0)
+            {
+                <div class="text-center text-muted">@T("mahjar.notifications.empty")</div>
+            }
+            else
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width:160px">@T("mahjar.notifications.title")</th>
+                            <th></th>
+                            <th style="width:160px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr class="@(item.IsRead ? "" : "font-weight-bold")">
+                                <td>@item.TypeLabel</td>
+                                <td>
+                                    @*[Mahjar contracts] title links to the notification's admin deep link when one exists*@
+                                    @if (!string.IsNullOrEmpty(item.Url))
+                                    {
+                                        <div><a href="@item.Url">@item.Title</a></div>
+                                    }
+                                    else
+                                    {
+                                        <div>@item.Title</div>
+                                    }
+                                    <div class="text-muted">@item.Body</div>
+                                </td>
+                                <td class="text-muted">@item.CreatedOnStr</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="pagination justify-content-center">
+                        @if (Model.HasPreviousPage)
+                        {
+                            <a class="btn btn-sm btn-light" href="@Url.Action("List", new { pageNumber = Model.PageIndex - 1 })">@T("Pager.Previous")</a>
+                        }
+                        <span class="btn btn-sm disabled">@(Model.PageIndex + 1) / @Model.TotalPages</span>
+                        @if (Model.HasNextPage)
+                        {
+                            <a class="btn btn-sm btn-light" href="@Url.Action("List", new { pageNumber = Model.PageIndex + 1 })">@T("Pager.Next")</a>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,211 @@
+@* [Mahjar home-slides] what the slide opens: one input per link kind, only the chosen kind's input is shown *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    //the product echo: the name when the id is real, a warning when it is not, nothing when no id is typed
+    var productFound = !string.IsNullOrEmpty(Model.TargetProductName);
+    var productEchoState = productFound ? "is-found" : Model.TargetProductId > 0 ? "is-missing" : "d-none";
+    var productEchoIcon = productFound || Model.TargetProductId <= 0 ? "fa-circle-check" : "fa-triangle-exclamation";
+    var productEchoText = productFound
+        ? Model.TargetProductName
+        : Model.TargetProductId > 0 ? T("admin.mahjar.homeslides.fields.target.notfound").Text : string.Empty;
+}
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetTypeId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="TargetTypeId" asp-items="Model.AvailableTargetTypes" />
+            <span asp-validation-for="TargetTypeId"></span>
+        </div>
+    </div>
+
+    @* product: search by name in any language (HomeSlide/ProductSearch) or type the id; the name is echoed back *@
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Product)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetProductId" />
+        </div>
+        <div class="col-md-9">
+            <div class="mhgr-hs-product">
+                <div class="input-group mhgr-hs-product__search">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-magnifying-glass"></i></span></div>
+                    <input type="text" id="homeslide-product-search" class="form-control" autocomplete="off"
+                           placeholder="@T("admin.mahjar.homeslides.fields.targetproduct.search")" />
+                </div>
+                <div class="input-group mhgr-hs-product__id">
+                    <div class="input-group-prepend"><span class="input-group-text">@T("admin.mahjar.homeslides.fields.targetproduct.id")</span></div>
+                    <input asp-for="TargetProductId" type="number" min="0" class="form-control" dir="ltr" />
+                </div>
+            </div>
+            <div id="homeslide-product-echo" class="mhgr-hs-echo @productEchoState">
+                <i class="fas @productEchoIcon"></i>
+                <span class="mhgr-hs-echo__text">@productEchoText</span>
+                <a id="homeslide-product-open" class="@(productFound ? string.Empty : "d-none")" target="_blank" rel="noopener"
+                   href="@Url.Action("Edit", "Product", new { id = Model.TargetProductId })">@T("admin.mahjar.homeslides.fields.targetproduct.open") <i class="fas fa-arrow-up-right-from-square"></i></a>
+            </div>
+            <span asp-validation-for="TargetProductId"></span>
+        </div>
+    </div>
+
+    @* product: open it in rent mode (Rent already chosen) — stored as TargetValue "rent"; a warning when the product
+       cannot be rented (it then opens as usual) *@
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Product)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetProductRentMode" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="TargetProductRentMode" />
+            <span asp-validation-for="TargetProductRentMode"></span>
+            <div class="mhgr-hs-size"><i class="fas fa-circle-info"></i> @T("admin.mahjar.homeslides.fields.targetrentmode.note")</div>
+            <div id="homeslide-rentmode-warn" class="mhgr-hs-note mhgr-hs-note--warn @(Model.TargetProductRentMode && productFound && !Model.TargetProductIsRental ? string.Empty : "d-none")">
+                <i class="fas fa-triangle-exclamation"></i> @T("admin.mahjar.homeslides.fields.targetrentmode.notrental")
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Category)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetCategoryId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="TargetCategoryId" asp-items="Model.AvailableCategories" />
+            <span asp-validation-for="TargetCategoryId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Manufacturer)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetManufacturerId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="TargetManufacturerId" asp-items="Model.AvailableManufacturers" />
+            <span asp-validation-for="TargetManufacturerId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Vendor)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetVendorId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="TargetVendorId" asp-items="Model.AvailableVendors" />
+            <span asp-validation-for="TargetVendorId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Search)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetSearch" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="TargetSearch" />
+            <span asp-validation-for="TargetSearch"></span>
+        </div>
+    </div>
+
+    <div class="form-group row mhgr-hs-target" data-target-type="@((int)HomeSlideTargetType.Url)">
+        <div class="col-md-3">
+            <nop-label asp-for="TargetUrl" />
+        </div>
+        <div class="col-md-9">
+            <input asp-for="TargetUrl" type="text" class="form-control" dir="ltr" placeholder="https://…  /  /luxury-watches" />
+            <span asp-validation-for="TargetUrl"></span>
+            <div class="mhgr-hs-size"><i class="fas fa-circle-info"></i> @T("admin.mahjar.homeslides.fields.targeturl.hint")</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        var $type = $('#@Html.IdFor(model => model.TargetTypeId)');
+        var $productId = $('#@Html.IdFor(model => model.TargetProductId)');
+        var $rentMode = $('#@Html.IdFor(model => model.TargetProductRentMode)');
+        var $rentWarn = $('#homeslide-rentmode-warn');
+        //whether the echoed product can be rented (null: no product found yet)
+        var productIsRental = @(productFound ? (Model.TargetProductIsRental ? "true" : "false") : "null");
+        var $echo = $('#homeslide-product-echo');
+        var $open = $('#homeslide-product-open');
+        var productEditUrl = '@Url.Action("Edit", "Product")';
+        var notFoundText = @Html.Raw(Json.Serialize(T("admin.mahjar.homeslides.fields.target.notfound").Text));
+        var unpublishedText = @Html.Raw(Json.Serialize(T("admin.mahjar.homeslides.fields.targetproduct.unpublished").Text));
+
+        //only the chosen kind's input is shown
+        function toggleTargetInputs() {
+            var selected = $type.val();
+            $('.mhgr-hs-target').each(function () {
+                var $row = $(this);
+                if (String($row.data('target-type')) === selected) {
+                    $row.showElement();
+                } else {
+                    $row.hideElement();
+                }
+            });
+        }
+
+        //rent mode on a product that cannot be rented: say it will open as usual
+        function toggleRentWarning() {
+            $rentWarn.toggleClass('d-none', !($rentMode.is(':checked') && productIsRental === false));
+        }
+
+        //echo the product behind the typed id (found / not found), with a link to it
+        function showProduct(found, name, published, rental) {
+            productIsRental = found ? !!rental : null;
+            toggleRentWarning();
+            var id = parseInt($productId.val(), 10) || 0;
+            if (id <= 0) {
+                $echo.addClass('d-none');
+            } else {
+                $echo.removeClass('d-none is-found is-missing').addClass(found ? 'is-found' : 'is-missing');
+                $echo.find('i').first().attr('class', 'fas ' + (found ? 'fa-circle-check' : 'fa-triangle-exclamation'));
+                $echo.find('.mhgr-hs-echo__text').text(found ? (name + (published ? '' : ' ' + unpublishedText)) : notFoundText);
+                if (found) {
+                    $open.attr('href', productEditUrl + '/' + id).removeClass('d-none');
+                } else {
+                    $open.addClass('d-none');
+                }
+            }
+            $(document).trigger('homeslide:changed');
+        }
+
+        var lookupTimer = null;
+        function lookupProduct() {
+            clearTimeout(lookupTimer);
+            lookupTimer = setTimeout(function () {
+                var id = parseInt($productId.val(), 10) || 0;
+                if (id <= 0) {
+                    showProduct(false);
+                    return;
+                }
+                $.getJSON('@Url.Action("ProductInfo", "HomeSlide")', { productId: id })
+                    .done(function (data) { showProduct(data.found, data.name, data.published, data.rental); })
+                    .fail(function () { showProduct(false); });
+            }, 350);
+        }
+
+        $('#homeslide-product-search').autocomplete({
+            delay: 400,
+            minLength: 3,
+            //our own search: the stock one matches only the base (English) name, never the Arabic one
+            source: '@Url.Action("ProductSearch", "HomeSlide")',
+            select: function (event, ui) {
+                $productId.val(ui.item.productid);
+                $(this).val('');
+                lookupProduct();
+                return false;
+            }
+        });
+
+        $productId.on('input change', lookupProduct);
+        $rentMode.on('change', toggleRentWarning);
+        $type.on('change', function () {
+            toggleTargetInputs();
+            $(document).trigger('homeslide:changed');
+        });
+
+        toggleTargetInputs();
+    });
+</script>

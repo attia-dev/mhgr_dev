@@ -1,0 +1,33 @@
+@* [Mahjar home-slides] add a home slide *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.homeslides.addnew").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Home slides");
+}
+
+<form asp-controller="HomeSlide" asp-action="Create" method="post" id="homeslide-form">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.homeslides.addnew")
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("admin.mahjar.homeslides.backtolist")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.Save")
+            </button>
+            <button type="submit" name="save-continue" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                @T("Admin.Common.SaveContinue")
+            </button>
+        </div>
+    </div>
+    @await Html.PartialAsync("_CreateOrUpdate", Model)
+</form>

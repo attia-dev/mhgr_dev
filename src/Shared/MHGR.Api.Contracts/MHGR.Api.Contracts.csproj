@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared DTO contracts for the MHGR mobile API. Pure POCOs, ZERO nopCommerce/EF dependencies, so both the
+       API (Nop.Web) and the .NET MAUI app can reference it and share the exact same models. [Mahjar mobile-api] -->
+  <PropertyGroup>
+    <!-- netstandard2.0 = consumable by the net9 backend AND the net10 MAUI app, and it carries no runtime pack
+         (so platform RIDs like win-x64 can never break its restore). -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>MHGR.Api.Contracts</RootNamespace>
+    <AssemblyName>MHGR.Api.Contracts</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

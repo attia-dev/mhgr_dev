@@ -1,0 +1,61 @@
+﻿@model IList<CategoryModel>
+
+@using Nop.Core.Domain.Catalog
+@using Nop.Web.Components
+
+@*[Mahjar home-motion] home categories as editorial tiles: a section heading (the grid had none), the watch render
+  filling a warm stage (multiply, so its grey square melts into the tile — no more off-white side bands), the name
+  over the picture, a slow hover zoom. The grid is a 6-column bento so any count fills its rows (5 → 2 wide + 3,
+  never an orphan). A category without a picture of its own shows a real watch — the picture of its first visible
+  product — and only a category with no watch at all gets the engraved dial (placed last, so it never takes one
+  of the large bento slots) instead of the "NO IMAGE" placeholder. The stand-in watch pictures are chosen and cached
+  by HomepageCategoriesViewComponent (they used to cost several uncached queries on every home page view).*@
+@{
+    var fallbackImages = ViewData[HomepageCategoriesViewComponent.MAHJAR_FALLBACK_IMAGES_KEY] as IDictionary<int, string>
+        ?? new Dictionary<int, string>();
+    var tiles = Model
+        .Select(category => (Item: category, ImageUrl: HomepageCategoriesViewComponent.HasOwnImage(category)
+            ? category.PictureModel.ImageUrl
+            : fallbackImages.TryGetValue(category.Id, out var fallback) ? fallback : null))
+        .OrderBy(t => string.IsNullOrEmpty(t.ImageUrl) ? 1 : 0)
+        .ToList();
+}
+@if (Model.Count > 0)
+{
+    <section class="mhx-section mhx-cats category-grid-mhx" id="mhx-categories">
+        <header class="mhx-head mhx-rv">
+            <p class="mhx-head__eyebrow">@T("Mahjar.Home.Categories.Eyebrow")</p>
+            <h2 class="mhx-head__title mhx-display">@T("Mahjar.Home.Categories.Title")</h2>
+            <span class="mhx-head__line" aria-hidden="true"></span>
+        </header>
+        <div class="mhx-cats__grid mhx-stagger">
+            @foreach (var (item, imageUrl) in tiles)
+            {
+                var hasImage = !string.IsNullOrEmpty(imageUrl);
+                <a class="mhx-cat mhx-rv" href="@(Url.RouteUrl<Category>(new { SeName = item.SeName }))" title="@item.PictureModel?.Title">
+                    <span class="mhx-cat__stage" aria-hidden="true">
+                        @if (hasImage)
+                        {
+                            <img class="mhx-cat__img" src="@imageUrl" alt="" loading="lazy" decoding="async" />
+                        }
+                        else
+                        {
+                            <svg class="mhx-cat__dial" viewBox="0 0 200 200" focusable="false">
+                                <circle cx="100" cy="100" r="92" />
+                                <circle cx="100" cy="100" r="84" class="mhx-cat__ticks" />
+                                <circle cx="100" cy="100" r="84" class="mhx-cat__hours" />
+                                <circle cx="100" cy="100" r="62" />
+                                <path d="M100 100 L100 52 M100 100 L134 118" class="mhx-cat__hands" />
+                                <circle cx="100" cy="100" r="3.2" class="mhx-cat__pin" />
+                            </svg>
+                        }
+                    </span>
+                    <span class="mhx-cat__body">
+                        <span class="mhx-cat__name mhx-display" dir="auto">@item.Name</span>
+                        <span class="mhx-cat__more">@T("Mahjar.Home.Categories.Discover")<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12h15M13 6l6 6-6 6" /></svg></span>
+                    </span>
+                </a>
+            }
+        </div>
+    </section>
+}

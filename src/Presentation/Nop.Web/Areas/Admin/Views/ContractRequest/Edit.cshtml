@@ -1,0 +1,505 @@
+@* [Mahjar contracts] contract request details *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model ContractRequestModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.contracts.edit.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Contract requests");
+}
+
+<form asp-controller="ContractRequest" asp-action="Edit" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("admin.mahjar.contracts.edit.title") - @Model.Number
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("admin.mahjar.contracts.list.title")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            @if (Model.CanSendContract)
+            {
+                <button type="submit" name="send-contract" class="btn bg-purple">
+                    <i class="far fa-paper-plane"></i>
+                    @T("admin.mahjar.contracts.buttons.sendcontract")
+                </button>
+            }
+            @if (Model.CanApprove)
+            {
+                <button type="submit" name="approve" class="btn btn-success">
+                    <i class="fas fa-check"></i>
+                    @T("admin.mahjar.contracts.buttons.approve")
+                </button>
+            }
+            @* [Mahjar handover] handover staff only view contracts *@
+            @if (Model.CanManage)
+            {
+                <button type="submit" name="save" class="btn btn-primary">
+                    <i class="far fa-floppy-disk"></i>
+                    @T("Admin.Common.Save")
+                </button>
+                <button type="submit" name="save-continue" class="btn btn-primary">
+                    <i class="far fa-floppy-disk"></i>
+                    @T("Admin.Common.SaveContinue")
+                </button>
+            }
+        </div>
+    </div>
+
+    <div asp-validation-summary="All"></div>
+    <input asp-for="Id" type="hidden" />
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="CustomerId" />
+                                </div>
+                                <div class="col-md-9">
+                                    <a asp-controller="Customer" asp-action="Edit" asp-route-id="@Model.CustomerId">@Model.CustomerFullName (@Model.CustomerEmail)</a>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="CreatedOn" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.CreatedOn</div>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Status" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.Status</div>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="LanguageName" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.LanguageName</div>
+                                </div>
+                            </div>
+                            @* [Mahjar contracts] which of the three templates the requested items resolve to *@
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Kind" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.Kind</div>
+                                </div>
+                            </div>
+                            @if (Model.OrderId > 0)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="OrderId" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <a asp-controller="Order" asp-action="Edit" asp-route-id="@Model.OrderId">@Model.OrderId</a>
+                                    </div>
+                                </div>
+                            }
+                            @if (Model.StatusId == (int)ContractRequestStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="RejectionReason" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-text-row">@Model.RejectionReason</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.fields.snapshot")
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>@T("mahjar.contracts.snapshot.product")</th>
+                                            <th>@T("mahjar.contracts.snapshot.mode")</th>
+                                            <th>@T("mahjar.contracts.snapshot.qty")</th>
+                                            <th>@T("mahjar.contracts.snapshot.period")</th>
+                                            <th>@T("mahjar.contracts.snapshot.unitprice")</th>
+                                            <th>@T("mahjar.contracts.snapshot.deposit")</th>
+                                            <th>@T("mahjar.contracts.snapshot.linetotal")</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (var i = 0; i < Model.SnapshotLines.Count; i++)
+                                        {
+                                            var line = Model.SnapshotLines[i];
+                                            <tr>
+                                                <td>@(i + 1)</td>
+                                                <td>
+                                                    <a asp-controller="Product" asp-action="Edit" asp-route-id="@line.ProductId">@line.Name</a>
+                                                    @if (!string.IsNullOrEmpty(line.Attributes))
+                                                    {
+                                                        <div>@Html.Raw(line.Attributes)</div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(line.Sku))
+                                                    {
+                                                        <div><small>@line.Sku</small></div>
+                                                    }
+                                                </td>
+                                                <td>@line.Mode</td>
+                                                <td>@line.Quantity</td>
+                                                <td>@(string.IsNullOrEmpty(line.Period) ? "—" : line.Period)</td>
+                                                <td>@line.UnitPrice</td>
+                                                <td>@line.Deposit</td>
+                                                <td>@line.LineTotal</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="7" class="text-right"><strong>@T("mahjar.contracts.snapshot.subtotal")</strong></td>
+                                            <td>@Model.SubTotal</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="7" class="text-right"><strong>@T("mahjar.contracts.snapshot.deposittotal")</strong></td>
+                                            <td>@Model.DepositTotal</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="7" class="text-right"><strong>@T("mahjar.contracts.snapshot.grandtotal")</strong></td>
+                                            <td><strong>@Model.GrandTotal</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* [Mahjar handover] condition checks: before signing (one per item, required to send the contract) + the
+                       delivery / return checks of the order placed against the contract *@
+                    @if (Model.ConditionChecks.Any())
+                    {
+                        <div class="card card-default">
+                            <div class="card-header">
+                                @T("admin.mahjar.handover.conditionchecks")
+                            </div>
+                            <div class="card-body">
+                                @if (Model.StatusId == (int)ContractRequestStatus.Pending)
+                                {
+                                    <p class="text-muted">@T("admin.mahjar.handover.precontract.hint")</p>
+                                    @if (!Model.PreContractReady)
+                                    {
+                                        <div class="alert alert-warning">@T("admin.mahjar.handover.precontract.blocked")</div>
+                                    }
+                                }
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>@T("admin.mahjar.handover.fields.type")</th>
+                                                <th>@T("admin.mahjar.handover.fields.product")</th>
+                                                <th>@T("admin.mahjar.handover.fields.status")</th>
+                                                <th>@T("admin.mahjar.handover.fields.media")</th>
+                                                <th>@T("admin.mahjar.handover.fields.confirmedon")</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in Model.ConditionChecks)
+                                            {
+                                                <tr>
+                                                    <td>@row.CheckType</td>
+                                                    <td>@row.ProductName</td>
+                                                    <td>@row.Status</td>
+                                                    <td>
+                                                        @if (row.HasMedia)
+                                                        {
+                                                            <span class="text-success"><i class="fas fa-check"></i> @row.Media</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-danger"><i class="fas fa-triangle-exclamation"></i> @row.Media</span>
+                                                        }
+                                                    </td>
+                                                    <td>@(row.Date.HasValue ? row.Date.Value.ToString("g") : "—")</td>
+                                                    <td>
+                                                        @if (Model.CanManageHandovers && row.CheckId > 0)
+                                                        {
+                                                            <a class="btn btn-default btn-sm" asp-controller="Handover" asp-action="Check" asp-route-id="@row.CheckId">
+                                                                <i class="fas fa-camera"></i> @T("admin.mahjar.handover.open")
+                                                            </a>
+                                                        }
+                                                        else if (Model.CanManageHandovers && row.CanStart)
+                                                        {
+                                                            @* starting a check creates a row: an antiforgery-protected POST that reuses this form's token *@
+                                                            <button type="submit" class="btn btn-primary btn-sm" formmethod="post"
+                                                                    formaction="@Url.Action("Open", "Handover", new { type = row.CheckTypeId, productId = row.ProductId, contractRequestId = Model.Id })">
+                                                                <i class="fas fa-camera"></i> @T("admin.mahjar.handover.open")
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ContractBody))
+                    {
+                        <div class="card card-default">
+                            <div class="card-header">
+                                @T("admin.mahjar.contracts.fields.contractbody")
+                            </div>
+                            <div class="card-body">
+                                <div style="max-height: 500px; overflow: auto; border: 1px solid #ddd; padding: 15px;">
+                                    @Html.Raw(Model.ContractBody)
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.SignatureDataUrl))
+                    {
+                        <div class="card card-default">
+                            <div class="card-header">
+                                @T("admin.mahjar.contracts.fields.signature")
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="SignatureDataUrl" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <img src="@Model.SignatureDataUrl" alt="" style="max-width: 400px; background: #fff; border: 1px solid #ddd;" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="SignedName" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-text-row">@Model.SignedName</div>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="SignedOn" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-text-row">@Model.SignedOn</div>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="SignedIp" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="form-text-row">@Model.SignedIp</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @* [Mahjar contracts] the agreement's per-transaction values; empty = the contract setting is used *@
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.fields.transactionterms")
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">@T("admin.mahjar.contracts.fields.transactionterms.hint")</p>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="DeliveryDetails" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="DeliveryDetails" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.DeliveryDetails</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ReturnDetails" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="ReturnDetails" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.ReturnDetails</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="VerificationReference" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="VerificationReference" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.VerificationReference</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="GuaranteeType" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="GuaranteeType" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.GuaranteeType</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="GuaranteeAmount" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="GuaranteeAmount" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.GuaranteeAmount</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ExtraFees" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="ExtraFees" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.ExtraFees</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="TaxAmount" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="TaxAmount" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.TaxAmount</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="LateReturnFee" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanEditTerms)
+                                    {
+                                        <nop-editor asp-for="LateReturnFee" />
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.LateReturnFee</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card card-default">
+                        <div class="card-header">
+                            @T("admin.mahjar.contracts.fields.admincomment")
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="AdminComment" />
+                                </div>
+                                <div class="col-md-9">
+                                    @if (Model.CanManage)
+                                    {
+                                        <nop-textarea asp-for="AdminComment"></nop-textarea>
+                                        <span asp-validation-for="AdminComment"></span>
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text-row">@Model.AdminComment</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.CanReject)
+                    {
+                        <div class="card card-default">
+                            <div class="card-header">
+                                @T("admin.mahjar.contracts.buttons.reject")
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        <nop-label asp-for="RejectionReason" />
+                                    </div>
+                                    <div class="col-md-9">
+                                        <nop-textarea asp-for="RejectionReason"></nop-textarea>
+                                        <span asp-validation-for="RejectionReason"></span>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-9 offset-md-3">
+                                        <button type="submit" name="reject" class="btn btn-danger">
+                                            <i class="fas fa-ban"></i>
+                                            @T("admin.mahjar.contracts.buttons.reject")
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

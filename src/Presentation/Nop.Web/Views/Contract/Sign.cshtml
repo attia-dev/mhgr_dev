@@ -1,0 +1,166 @@
+@model Nop.Web.Models.Contract.ContractSignModel
+@*[Mahjar contracts] contract signing page: frozen contract body + hand-drawn canvas signature*@
+@{
+    Layout = "_ColumnsTwo";
+    NopHtml.AddTitleParts(T("mahjar.contracts.sign.title").Text);
+    NopHtml.AppendPageCssClassParts("html-account-page");
+    NopHtml.AppendPageCssClassParts("html-contract-sign-page");
+}
+
+@section left
+{
+    @await Component.InvokeAsync(typeof(CustomerNavigationViewComponent), new { selectedTabId = CustomerNavigationEnum.Contracts })
+}
+
+<style>
+    .contract-sign-page .contract-body { max-height: 420px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 20px; background: #fff; }
+    .contract-sign-page .signature-pad-wrapper { border: 1px dashed #999; border-radius: 4px; display: inline-block; max-width: 100%; background: #fff; }
+    .contract-sign-page #signature-pad { touch-action: none; display: block; max-width: 100%; cursor: crosshair; }
+    /* [Mahjar contracts] tools row as flex (direction-neutral, RTL-safe) */
+    .contract-sign-page .signature-tools { margin: 8px 0 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    /* [Mahjar contracts] Clear = outline pill; the theme's [Mahjar] .button-2 override supplies colors/26px radius but no padding here,
+       which rendered a tiny clipped circle — give it the dark pill's geometry explicitly (matches .account-page .button-1) */
+    .contract-sign-page #clear-signature {
+        min-width: 140px;
+        padding: 10px 30px;
+        font-size: 15px;
+        text-align: center;
+        text-transform: uppercase;
+        background: transparent !important;
+        border: 1px solid #241717 !important;
+        color: #241717 !important;
+        border-radius: 26px !important;
+        box-shadow: none !important;
+        cursor: pointer;
+    }
+    .contract-sign-page #clear-signature:hover,
+    .contract-sign-page #clear-signature:focus {
+        background: #241717 !important;
+        color: #DFDFDB !important;
+    }
+    .contract-sign-page .form-fields .inputs { margin-bottom: 12px; }
+    .contract-sign-page .agree-terms { margin: 12px 0; }
+</style>
+
+<div class="page account-page contract-sign-page">
+    <div class="page-title">
+        <h1>@T("mahjar.contracts.sign.title") - @Model.Number</h1>
+    </div>
+    <div class="page-body">
+        <div class="contract-body">
+            @Html.Raw(Model.BodyHtml)
+        </div>
+
+        @*[Mahjar handover] the current condition of each item, documented by the staff and locked when the contract was
+            sent — shown right above the signature because it is part of what the customer signs*@
+        @if (Model.ConditionChecks.Any())
+        {
+            <div class="contract-condition-section" style="margin-bottom: 20px;">
+                <h2 style="font-size: 18px; margin: 0 0 6px;">@T("mahjar.contracts.condition.title")</h2>
+                <p style="margin: 0 0 10px;">@T("mahjar.contracts.condition.signhint")</p>
+                @await Html.PartialAsync("_ConditionChecks", Model.ConditionChecks)
+            </div>
+        }
+
+        <form asp-route="ContractSignPost" asp-route-token="@Model.Token" method="post" id="contract-sign-form"
+              data-invalid-signature="@T("mahjar.contracts.sign.invalidsignature")"
+              data-must-agree="@T("mahjar.contracts.sign.mustagree")">
+            <input type="hidden" name="signatureDataUrl" id="signatureDataUrl" />
+            <div class="form-fields">
+                <div class="inputs">
+                    <label for="signature-pad">@T("mahjar.contracts.sign.signhere")</label>
+                    <div class="signature-pad-wrapper">
+                        <canvas id="signature-pad" width="600" height="200"></canvas>
+                    </div>
+                    <div class="signature-tools">
+                        <button type="button" id="clear-signature" class="button-2">@T("mahjar.contracts.sign.clear")</button>
+                    </div>
+                </div>
+                <div class="inputs">
+                    <label for="signedName">@T("mahjar.contracts.sign.typedname"):</label>
+                    <input type="text" id="signedName" name="signedName" value="@Model.SignedName" class="text-box single-line" maxlength="400" required />
+                </div>
+                <div class="agree-terms">
+                    <input type="checkbox" id="agree" name="agree" value="true" required />
+                    <label for="agree">@T("mahjar.contracts.sign.agreement")</label>
+                </div>
+            </div>
+            <div class="buttons">
+                <button type="submit" class="button-1 submit-signature-button">@T("mahjar.contracts.sign.submit")</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script asp-location="Footer">
+    $(function () {
+        var canvas = document.getElementById('signature-pad');
+        var ctx = canvas.getContext('2d');
+        var form = document.getElementById('contract-sign-form');
+        var dirty = false;
+        var drawing = false;
+
+        function initPad() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#1a1a1a';
+            dirty = false;
+        }
+
+        function getPoint(e) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            drawing = true;
+            canvas.setPointerCapture(e.pointerId);
+            var p = getPoint(e);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+        });
+        canvas.addEventListener('pointermove', function (e) {
+            if (!drawing)
+                return;
+            e.preventDefault();
+            var p = getPoint(e);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            dirty = true;
+        });
+        canvas.addEventListener('pointerup', function (e) {
+            drawing = false;
+        });
+        canvas.addEventListener('pointercancel', function (e) {
+            drawing = false;
+        });
+
+        document.getElementById('clear-signature').addEventListener('click', function () {
+            initPad();
+        });
+
+        form.addEventListener('submit', function (e) {
+            if (!dirty || !document.getElementById('signedName').value.trim()) {
+                e.preventDefault();
+                alert(form.getAttribute('data-invalid-signature'));
+                return false;
+            }
+            if (!document.getElementById('agree').checked) {
+                e.preventDefault();
+                alert(form.getAttribute('data-must-agree'));
+                return false;
+            }
+            document.getElementById('signatureDataUrl').value = canvas.toDataURL('image/png');
+            return true;
+        });
+
+        initPad();
+    });
+</script>

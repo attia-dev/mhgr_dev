@@ -1,0 +1,96 @@
+@* [Mahjar home-slides] where and when the slide shows: placement, channels, publishing, order and schedule *@
+@using Nop.Core.Domain.Mahjar
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideModel
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="PlacementId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="PlacementId" asp-items="Model.AvailablePlacements" />
+            <span asp-validation-for="PlacementId"></span>
+            <div id="homeslide-feature-note" class="mhgr-hs-note d-none">
+                <i class="fas fa-circle-info"></i> @T("admin.mahjar.homeslides.fields.placement.featurenote")
+            </div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ShowOnWeb" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="ShowOnWeb" />
+            <span asp-validation-for="ShowOnWeb"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ShowOnApp" />
+        </div>
+        <div class="col-md-9">
+            @* a feature band never reaches the app: the real switch is only hidden (its value is kept for a switch
+               back to the hero), and a switched-off stand-in says why *@
+            <div id="homeslide-showonapp-control">
+                <nop-editor asp-for="ShowOnApp" />
+            </div>
+            <div id="homeslide-showonapp-na" class="mhgr-hs-na d-none">
+                <input type="checkbox" class="check-box" disabled aria-hidden="true" tabindex="-1" />
+                <span>@T("admin.mahjar.homeslides.fields.showonapp.featureonly")</span>
+            </div>
+            <span asp-validation-for="ShowOnApp"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="Published" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="Published" />
+            <span asp-validation-for="Published"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="DisplayOrder" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="DisplayOrder" />
+            <span asp-validation-for="DisplayOrder"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="StartDate" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="StartDate" />
+            <span asp-validation-for="StartDate"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="EndDate" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="EndDate" />
+            <span asp-validation-for="EndDate"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        //a feature band is a web-only surface: say so when it is chosen, and take the app switch out of play
+        var $placement = $('#@Html.IdFor(model => model.PlacementId)');
+        function toggleFeatureNote() {
+            var isFeature = $placement.val() === '@((int)HomeSlidePlacement.Feature)';
+            $('#homeslide-feature-note').toggleClass('d-none', !isFeature);
+            $('#homeslide-showonapp-control').toggleClass('d-none', isFeature);
+            $('#homeslide-showonapp-na').toggleClass('d-none', !isFeature);
+        }
+        $placement.on('change', toggleFeatureNote);
+        toggleFeatureNote();
+    });
+</script>

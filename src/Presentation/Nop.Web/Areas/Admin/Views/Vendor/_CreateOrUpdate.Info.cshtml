@@ -1,0 +1,340 @@
+﻿@model VendorModel
+
+<div class="card-body">
+    @(await Html.LocalizedEditorAsync<VendorModel, VendorLocalizedModel>("vendor-info-localized",
+    @<div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="@Model.Locales[item].Name" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="@Model.Locales[item].Name" />
+                <span asp-validation-for="@Model.Locales[item].Name"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="@Model.Locales[item].Description" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="@Model.Locales[item].Description" asp-template="RichEditor" />
+                <span asp-validation-for="@Model.Locales[item].Description"></span>
+            </div>
+        </div>
+        <input type="hidden" asp-for="@Model.Locales[item].LanguageId" />
+    </div>
+    ,
+    @<div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="Name" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="Name" asp-required="true" />
+                <span asp-validation-for="Name"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="Description" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="Description" asp-template="RichEditor" />
+                <span asp-validation-for="Description"></span>
+            </div>
+        </div>
+    </div>))
+
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="Email" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="Email" asp-required="true" />
+            <span asp-validation-for="Email"></span>
+        </div>
+    </div>
+
+        @if (Model.Id > 0)
+        {
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AssociatedCustomers" />
+                </div>
+                <div class="col-md-9">
+                    @if (Model.AssociatedCustomers.Count > 0)
+                    {
+                        for (var i = 0; i < Model.AssociatedCustomers.Count; i++)
+                        {
+                            <a asp-action="Edit" asp-controller="Customer" asp-route-id="@Model.AssociatedCustomers[i].Id">
+                                @Model.AssociatedCustomers[i].Email
+                            </a>
+                            if (i != Model.AssociatedCustomers.Count - 1)
+                            {
+                                <text>, </text>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <div class="form-text-row">@T("Admin.Vendors.Fields.AssociatedCustomerEmails.None")</div>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="PmCustomerId" />
+                </div>
+                <div class="col-md-9">
+                    <input type="hidden" asp-for="PmCustomerId" />
+                    <div id="customer-info">
+                        <a asp-controller="Customer" asp-action="Edit" asp-route-id="@Model.PmCustomerId">@Model.PmCustomerInfo</a>
+                    </div>
+                    <button type="submit" onclick="javascript:OpenWindow('@(Url.Action("AddCustomerToVendorPopup", new { customerIdInput = Html.IdFor(model => model.PmCustomerId), customerInfoInput = "customer-info", btnId = "btnRefreshCustomer"}))', 800, 850, true); return false;" class="btn btn-primary">
+                        @T("Admin.Vendors.Fields.PmCustomerId.Choose")
+                    </button>
+                    <button type="submit" id="customer-remove" class="btn btn-danger">
+                        @T("Admin.Vendors.Fields.PmCustomerId.Remove")
+                    </button>
+                    <button type="submit" id="btnRefreshCustomer" style="display: none"></button>
+                    <span asp-validation-for="PmCustomerId"></span>
+                </div>
+            </div>
+
+        <script asp-location="Footer">
+                $(function () {
+                    const pmCustomerInput = $("#@Html.IdFor(model => model.PmCustomerId)");
+                    toggleRemoveButton();
+
+                    $('#customer-remove').click(function () {
+                        $('#customer-info').text('');
+                        pmCustomerInput.val(0);
+                        toggleRemoveButton();
+                        return false;
+                    });
+
+                    $('#btnRefreshCustomer').click(function () {
+                        toggleRemoveButton();
+                        return false;
+                    });
+
+                    function toggleRemoveButton() {
+                        if (pmCustomerInput.val() > 0) {
+                            $('#customer-remove').show();
+                        } else {
+                            $('#customer-remove').hide();
+                        }
+                    }
+                });
+            </script>
+        }
+
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="Active" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="Active" />
+            <span asp-validation-for="Active"></span>
+        </div>
+    </div>
+
+    @*[Mahjar vendor-application] identity declared on the "become a partner" application*@
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="VendorTypeId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="VendorTypeId" asp-items="Model.AvailableVendorTypes" />
+            <span asp-validation-for="VendorTypeId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-label asp-for="NationalId" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="NationalId" />
+            <span asp-validation-for="NationalId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-label asp-for="CommercialRegistrationNumber" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="CommercialRegistrationNumber" />
+            <span asp-validation-for="CommercialRegistrationNumber"></span>
+        </div>
+    </div>
+
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-label asp-for="VatNumber" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="VatNumber" />
+            <span asp-validation-for="VatNumber"></span>
+        </div>
+    </div>
+
+    @*[Mahjar vendor-application] read-only: the stamp is written by the application flow, never by an admin save*@
+    @if (Model.Id > 0)
+    {
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="TermsAcceptedOnUtc" />
+            </div>
+            <div class="col-md-9">
+                <div class="form-text-row">
+                    @if (Model.TermsAcceptedOnUtc.HasValue)
+                    {
+                        @Model.TermsAcceptedOnUtc.Value.ToString("F")
+                    }
+                    else
+                    {
+                        @T("Admin.Vendors.Fields.TermsAcceptedOn.No")
+                    }
+                </div>
+            </div>
+        </div>
+
+        @*[Mahjar partner-agreement] the acceptance record of the master partner agreement. Every row here is
+            evidence written once by the application flow — the mapper ignores all of it on save, so nothing an
+            admin does on this page can alter or clear it. The frozen text itself opens in its own page.*@
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="ActivatedServicesName" />
+            </div>
+            <div class="col-md-9">
+                <div class="form-text-row">@Model.ActivatedServicesName</div>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="AgreementDocumentName" />
+            </div>
+            <div class="col-md-9">
+                <div class="form-text-row">
+                    @if (!string.IsNullOrEmpty(Model.AgreementDocumentName))
+                    {
+                        @Model.AgreementDocumentName
+                        <text> — </text>
+                        @T("Admin.Vendors.Fields.AgreementVersion")<text>: </text>@Model.AgreementVersion
+                        if (!Model.AgreementIsCurrent)
+                        {
+                            <span class="text-danger">@T("Admin.Vendors.Fields.AgreementVersion.Outdated")</span>
+                        }
+                        if (Model.HasAgreementBody)
+                        {
+                            <a href="@Url.Action("Agreement", "Vendor", new { id = Model.Id })" target="_blank" class="btn btn-secondary btn-sm">
+                                @T("Admin.Vendors.Fields.Agreement.View")
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        @T("Admin.Vendors.Fields.Agreement.NotAccepted")
+                    }
+                </div>
+            </div>
+        </div>
+        @if (Model.AgreementAcceptedOnUtc.HasValue)
+        {
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AgreementAcceptedOnUtc" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">@Model.AgreementAcceptedOnUtc.Value.ToString("F")</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AgreementAcceptanceMethod" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">
+                        @Model.AgreementAcceptanceMethod
+                        @if (!string.IsNullOrEmpty(Model.AgreementAcceptedIp))
+                        {
+                            <text> (@Model.AgreementAcceptedIp)</text>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AgreementTechnicalRef" />
+                </div>
+                <div class="col-md-9">
+                    <div class="form-text-row">
+                        <code>@Model.AgreementTechnicalRef</code>
+                        @if (!string.IsNullOrEmpty(Model.AgreementBodyHash))
+                        {
+                            <div class="text-muted">@T("Admin.Vendors.Fields.AgreementBodyHash"): <code>@Model.AgreementBodyHash</code></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.VendorTypeId == (int)Nop.Core.Domain.Vendors.VendorType.Corporation)
+        {
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AuthorizedSignatoryName" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="AuthorizedSignatoryName" />
+                    <span asp-validation-for="AuthorizedSignatoryName"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AuthorizedSignatoryCapacity" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="AuthorizedSignatoryCapacity" />
+                    <span asp-validation-for="AuthorizedSignatoryCapacity"></span>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-label asp-for="PictureId" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="PictureId" />
+            <span asp-validation-for="PictureId"></span>
+        </div>
+    </div>
+
+    <div class="form-group row advanced-setting">
+        <div class="col-md-3">
+            <nop-label asp-for="AdminComment" />
+        </div>
+        <div class="col-md-9">
+            <nop-textarea asp-for="AdminComment"></nop-textarea>
+            <span asp-validation-for="AdminComment"></span>
+        </div>
+    </div>
+
+    @if (Model.VendorAttributes.Count > 0)
+    {
+        @await Html.PartialAsync("_VendorAttributes", Model.VendorAttributes)
+    }
+
+    <div class="card card-default advanced-setting">
+        <div class="card-header">
+            @T("Admin.Vendors.Address")
+        </div>
+        <div class="card-body">
+            <nop-editor asp-for="Address" asp-template="Address" />
+        </div>
+    </div>
+</div>

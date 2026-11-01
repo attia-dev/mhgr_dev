@@ -1,0 +1,128 @@
+@model Nop.Web.Models.Contract.ContractListModel
+@*[Mahjar contracts] customer "My contracts" account page*@
+@{
+    Layout = "_ColumnsTwo";
+    NopHtml.AddTitleParts(T("mahjar.contracts.title").Text);
+    NopHtml.AppendPageCssClassParts("html-account-page");
+    NopHtml.AppendPageCssClassParts("html-contracts-page");
+}
+
+@section left
+{
+    @await Component.InvokeAsync(typeof(CustomerNavigationViewComponent), new { selectedTabId = CustomerNavigationEnum.Contracts })
+}
+
+<style>
+    .contracts-page .contract-status-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #eee; }
+    .contracts-page .contract-status-approved .contract-status-badge { background: #d9f2d9; }
+    .contracts-page .contract-status-rejected .contract-status-badge, .contracts-page .contract-status-cancelled .contract-status-badge { background: #f2d9d9; }
+    .contracts-page .contract-status-contractsent .contract-status-badge { background: #d9e6f2; }
+    .contracts-page .contract-lines { margin: 10px 0; padding: 0; list-style: none; font-size: 13px; }
+    .contracts-page .contract-rejection-reason { margin: 10px 0; padding: 8px 12px; background: #fbeaea; border-radius: 4px; }
+    /* [Mahjar contracts] button row as a flex row so the inline cancel form can't overlap the sign/checkout pills (direction-neutral, RTL-safe) */
+    .contracts-page .contract-item .buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .contracts-page .contract-item .buttons form { display: inline-block; margin: 0; }
+    /* [Mahjar contracts] cancel = outline pill; geometry matches the theme's dark pill (.account-page .button-1: 10px 30px / 15px / uppercase + the [Mahjar] 26px radius);
+       !important is needed to out-cascade the theme's !important .buttons .button-2 espresso fill */
+    .contracts-page .buttons .cancel-contract-button,
+    .contracts-page .buttons .view-contract-button {
+        min-width: 140px;
+        padding: 10px 30px;
+        font-size: 15px;
+        text-align: center;
+        text-transform: uppercase;
+        background: transparent !important;
+        border: 1px solid #241717 !important;
+        color: #241717 !important;
+        border-radius: 26px !important;
+        box-shadow: none !important;
+        cursor: pointer;
+    }
+    .contracts-page .buttons .cancel-contract-button:hover,
+    .contracts-page .buttons .cancel-contract-button:focus,
+    .contracts-page .buttons .view-contract-button:hover,
+    .contracts-page .buttons .view-contract-button:focus {
+        background: #241717 !important;
+        color: #DFDFDB !important;
+    }
+</style>
+
+<div class="page account-page contracts-page">
+    <div class="page-title">
+        <h1>@T("Account.MyAccount") - @T("mahjar.contracts.title")</h1>
+    </div>
+    <div class="page-body">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="no-data">@T("mahjar.contracts.empty")</div>
+        }
+        else
+        {
+            <div class="contract-list">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="section contract-item @item.StatusClass">
+                        <div class="title">
+                            <strong>@item.Number</strong>
+                        </div>
+                        <ul class="info">
+                            <li>@item.CreatedOn</li>
+                            <li><span class="contract-status-badge">@item.Status</span></li>
+                            @if (!string.IsNullOrEmpty(item.GrandTotal))
+                            {
+                                <li>@T("mahjar.contracts.snapshot.grandtotal"): <strong>@item.GrandTotal</strong></li>
+                            }
+                            @if (!string.IsNullOrEmpty(item.SignedOn))
+                            {
+                                <li>@T("mahjar.contracts.signedon"): @item.SignedOn</li>
+                            }
+                        </ul>
+                        @if (item.Lines.Count > 0)
+                        {
+                            <ul class="contract-lines">
+                                @foreach (var line in item.Lines)
+                                {
+                                    <li>
+                                        @line.Name &times; @line.Quantity
+                                        @if (line.IsRental)
+                                        {
+                                            <span class="rental-period">(@T("mahjar.contracts.snapshot.mode.rent")@(string.IsNullOrEmpty(line.Period) ? "" : $": {line.Period}"))</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        @if (!string.IsNullOrEmpty(item.RejectionReason))
+                        {
+                            <div class="contract-rejection-reason">
+                                <strong>@T("mahjar.contracts.rejectionreason"):</strong> @item.RejectionReason
+                            </div>
+                        }
+                        <div class="buttons">
+                            @if (item.CanSign)
+                            {
+                                <button type="button" class="button-1 sign-contract-button" onclick="setLocation('@Url.RouteUrl("ContractSign", new { token = item.Token })')">@T("mahjar.contracts.signlink")</button>
+                            }
+                            @if (item.CanCheckout)
+                            {
+                                <button type="button" class="button-1 contract-checkout-button" onclick="setLocation('@Url.RouteUrl("Checkout")')">@T("mahjar.contracts.proceedtocheckout")</button>
+                            }
+                            @*[Mahjar handover] the document, the signature and the condition checks, read-only*@
+                            @if (item.CanView)
+                            {
+                                <button type="button" class="button-2 view-contract-button" onclick="setLocation('@Url.RouteUrl("ContractDetails", new { id = item.Id })')">@T("mahjar.contracts.view")</button>
+                            }
+                            @if (item.CanCancel)
+                            {
+                                @*[Mahjar contracts] inline-block (was inline) so the flex button row sizes the form like its sibling pills*@
+                                <form asp-route="ContractCancel" asp-route-id="@item.Id" method="post" style="display: inline-block;">
+                                    <button type="submit" class="button-2 cancel-contract-button">@T("mahjar.contracts.cancel")</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

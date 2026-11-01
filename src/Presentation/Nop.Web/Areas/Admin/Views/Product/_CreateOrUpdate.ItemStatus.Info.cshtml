@@ -1,0 +1,260 @@
+@model ProductModel
+
+@using Nop.Core.Domain.Mahjar
+@using Nop.Services
+
+@*[Mahjar item-status] Overview of the condition report. The fields below are plain product-form fields: they
+    post with the main Save button and are persisted by ProductController.SaveItemStatusAsync. The video block
+    underneath is the one exception — it talks to its own upload/delete endpoints, because a 100 MB file has no
+    business travelling with the product form.*@
+@{
+    var allowedVideoExtensions = (Model.ItemStatus.AllowedVideoExtensions ?? string.Empty)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(extension => extension.Trim().ToLowerInvariant())
+        .Where(extension => !string.IsNullOrEmpty(extension))
+        .Select(extension => extension.StartsWith('.') ? extension : $".{extension}")
+        .ToList();
+
+    var hasVideoFile = !string.IsNullOrEmpty(Model.ItemStatus.VideoFile);
+
+    var videoMissingMessage = T("Admin.Catalog.Products.ItemStatus.Alert.VideoMissing").Text;
+    var videoTooLargeMessage = string.Format(T("Admin.Catalog.Products.ItemStatus.Alert.VideoTooLarge").Text, Model.ItemStatus.MaxVideoSizeMb);
+    var videoBadFormatMessage = string.Format(T("Admin.Catalog.Products.ItemStatus.Alert.VideoBadFormat").Text, string.Join(", ", allowedVideoExtensions));
+    var commonErrorMessage = T("Common.Error").Text;
+}
+
+<div class="card-body">
+    @*[Mahjar item-status] the product id and the uploaded file round-trip only so the client script has them;
+        the server re-reads both from the database and never trusts what comes back here*@
+    <input asp-for="ItemStatus.ProductId" type="hidden" />
+    <input asp-for="ItemStatus.VideoFile" type="hidden" />
+
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ItemStatus.ShowOnProductPage" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="ItemStatus.ShowOnProductPage" />
+            <span asp-validation-for="ItemStatus.ShowOnProductPage"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ItemStatus.ConditionGradeId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="ItemStatus.ConditionGradeId" asp-items="@(await ((ItemConditionGrade)Model.ItemStatus.ConditionGradeId).ToSelectListAsync())" />
+            <span asp-validation-for="ItemStatus.ConditionGradeId"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ItemStatus.Summary" />
+        </div>
+        <div class="col-md-9">
+            <nop-textarea asp-for="ItemStatus.Summary" />
+            <span asp-validation-for="ItemStatus.Summary"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ItemStatus.InspectedOn" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="ItemStatus.InspectedOn" />
+            <span asp-validation-for="ItemStatus.InspectedOn"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ItemStatus.VideoUrl" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="ItemStatus.VideoUrl" />
+            <span asp-validation-for="ItemStatus.VideoUrl"></span>
+        </div>
+    </div>
+
+    <div class="card card-default">
+        <div class="card-header">
+            @T("Admin.Catalog.Products.ItemStatus.Video")
+        </div>
+        <div class="card-body">
+            <div class="form-group row @(hasVideoFile ? null : "d-none")" id="itemstatus-video-current">
+                <div class="col-md-3">
+                    <div class="label-wrapper">
+                        <label class="col-form-label">@T("Admin.Catalog.Products.ItemStatus.Video.Current")</label>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <video id="itemstatus-video-player" controls preload="metadata" style="max-width: 100%" src="@Model.ItemStatus.VideoFile">
+                        @T("Mahjar.ItemStatus.VideoUnsupported")
+                    </video>
+                    <div class="mt-2">
+                        <button type="button" id="removeItemStatusVideo" class="btn btn-danger">
+                            <i class="far fa-trash-can"></i>
+                            @T("Admin.Catalog.Products.ItemStatus.Video.Remove")
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group row @(hasVideoFile ? "d-none" : null)" id="itemstatus-video-none">
+                <div class="col-md-9 offset-md-3">
+                    <em>@T("Admin.Catalog.Products.ItemStatus.Video.None")</em>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <div class="label-wrapper">
+                        <label class="col-form-label">@T("Admin.Catalog.Products.ItemStatus.Video.Upload")</label>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    @*[Mahjar item-status] deliberately nameless: this input must never travel with the product form*@
+                    <input type="file" id="itemstatus-video-input" class="form-control" accept="video/*" />
+                    <div class="progress mt-2 d-none" id="itemstatus-video-progress" style="height: 20px">
+                        <div class="progress-bar bg-primary" id="itemstatus-video-progress-bar" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <button type="button" id="uploadItemStatusVideo" class="btn btn-primary mt-2">
+                        <i class="fas fa-upload"></i>
+                        @T("Admin.Catalog.Products.ItemStatus.Video.Upload")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        //[Mahjar item-status] the same two limits the action enforces, checked here so a partner is told before
+        //spending minutes uploading a file the server will refuse
+        const itemStatusMaxVideoBytes = @Html.Raw(Json.Serialize(Model.ItemStatus.MaxVideoSizeMb)) * 1024 * 1024;
+        const itemStatusAllowedExtensions = @Html.Raw(Json.Serialize(allowedVideoExtensions));
+        const itemStatusVideoMissing = @Html.Raw(Json.Serialize(videoMissingMessage));
+        const itemStatusVideoTooLarge = @Html.Raw(Json.Serialize(videoTooLargeMessage));
+        const itemStatusVideoBadFormat = @Html.Raw(Json.Serialize(videoBadFormatMessage));
+        const itemStatusCommonError = @Html.Raw(Json.Serialize(commonErrorMessage));
+
+        const $uploadButton = $('#uploadItemStatusVideo');
+        const $removeButton = $('#removeItemStatusVideo');
+        const $progress = $('#itemstatus-video-progress');
+        const $progressBar = $('#itemstatus-video-progress-bar');
+
+        function showItemStatusVideo(videoFile) {
+            $('#@Html.IdFor(model => model.ItemStatus.VideoFile)').val(videoFile || '');
+
+            if (videoFile) {
+                const player = document.getElementById('itemstatus-video-player');
+                player.src = videoFile;
+                player.load();
+                $('#itemstatus-video-current').removeClass('d-none');
+                $('#itemstatus-video-none').addClass('d-none');
+            } else {
+                const player = document.getElementById('itemstatus-video-player');
+                player.removeAttribute('src');
+                player.load();
+                $('#itemstatus-video-current').addClass('d-none');
+                $('#itemstatus-video-none').removeClass('d-none');
+            }
+        }
+
+        $uploadButton.click(function () {
+            const input = document.getElementById('itemstatus-video-input');
+            const file = input.files && input.files.length ? input.files[0] : null;
+            if (!file) {
+                alert(itemStatusVideoMissing);
+                return;
+            }
+
+            const dotIndex = file.name.lastIndexOf('.');
+            const extension = dotIndex < 0 ? '' : file.name.substring(dotIndex).toLowerCase();
+            if (itemStatusAllowedExtensions.indexOf(extension) < 0) {
+                alert(itemStatusVideoBadFormat);
+                return;
+            }
+
+            if (file.size > itemStatusMaxVideoBytes) {
+                alert(itemStatusVideoTooLarge);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file, file.name);
+
+            //the action is NOT [IgnoreAntiforgeryToken], so the token rides along in the multipart body
+            const token = $('input[name=__RequestVerificationToken]').val();
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
+
+            $uploadButton.attr('disabled', true);
+            $progress.removeClass('d-none');
+            $progressBar.css('width', '0%').text('0%');
+
+            const request = new XMLHttpRequest();
+            request.open('POST', '@Html.Raw(Url.Action("ProductItemStatusVideoUpload", "Product", new { productId = Model.Id }))');
+
+            request.upload.onprogress = function (e) {
+                if (!e.lengthComputable) {
+                    return;
+                }
+                const percent = Math.round((e.loaded / e.total) * 100);
+                $progressBar.css('width', percent + '%').text(percent + '%');
+            };
+
+            request.onload = function () {
+                $uploadButton.attr('disabled', false);
+                $progress.addClass('d-none');
+
+                if (request.status < 200 || request.status >= 300) {
+                    alert(itemStatusCommonError);
+                    return;
+                }
+
+                const data = JSON.parse(request.responseText);
+                if (data.success) {
+                    showItemStatusVideo(data.videoFile);
+                    input.value = '';
+                } else {
+                    display_nop_error(data);
+                }
+            };
+
+            request.onerror = function () {
+                $uploadButton.attr('disabled', false);
+                $progress.addClass('d-none');
+                alert(itemStatusCommonError);
+            };
+
+            request.send(formData);
+        });
+
+        $removeButton.click(function () {
+            $removeButton.attr('disabled', true);
+
+            const postData = {};
+            addAntiForgeryToken(postData);
+
+            $.ajax({
+                cache: false,
+                type: 'POST',
+                url: '@Html.Raw(Url.Action("ProductItemStatusVideoDelete", "Product", new { productId = Model.Id }))',
+                data: postData,
+                success: function (data) {
+                    if (data.success) {
+                        showItemStatusVideo(null);
+                    } else {
+                        display_nop_error(data);
+                    }
+                },
+                error: function () {
+                    alert(itemStatusCommonError);
+                },
+                complete: function () {
+                    $removeButton.attr('disabled', false);
+                }
+            });
+        });
+    });
+</script>

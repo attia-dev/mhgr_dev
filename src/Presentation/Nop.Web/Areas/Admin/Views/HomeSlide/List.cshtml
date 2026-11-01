@@ -1,0 +1,252 @@
+@* [Mahjar home-slides] the home slides list: the web hero carousel and feature bands, and the app home carousel *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model HomeSlideSearchModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("admin.mahjar.homeslides.list.title").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Home slides");
+
+    const string hideSearchBlockAttributeName = "HomeSlidesPage.HideSearchBlock";
+    var hideSearchBlock = await genericAttributeService.GetAttributeAsync<bool>(await workContext.GetCurrentCustomerAsync(), hideSearchBlockAttributeName);
+}
+
+<style>
+    .mhgr-slides-intro { border-inline-start: 4px solid #B08D57; }
+    .mhgr-slides-intro .card-body { padding: 1.25rem 1.5rem; }
+    .mhgr-slides-intro__lead { font-size: 1.05rem; margin-bottom: 1rem; color: #3A2A26; }
+    .mhgr-slides-intro__lead strong { display: block; font-size: 1.2rem; margin-bottom: .25rem; }
+    .mhgr-slides-intro__item { display: flex; gap: .75rem; align-items: flex-start; margin-bottom: .75rem; }
+    .mhgr-slides-intro__icon { flex: 0 0 38px; height: 38px; border-radius: 50%; background: #F4F1EB; color: #B08D57;
+        display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .mhgr-slides-intro__item h5 { font-size: .95rem; font-weight: 700; margin: 0 0 .2rem; color: #3A2A26; }
+    .mhgr-slides-intro__item p { font-size: .88rem; margin: 0; color: #6E635E; line-height: 1.6; }
+    .mhgr-slide-thumb { display: block; width: 90px; height: 56px; border-radius: 6px; object-fit: cover;
+        background: #EDE9E3; border: 1px solid #E2DBD2; margin: 0 auto; }
+    .mhgr-slide-thumb--empty { display: flex; align-items: center; justify-content: center; color: #B8AFA8; }
+    .mhgr-slide-cell { min-width: 260px; }
+    .mhgr-slide-cell__kicker { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: #B08D57; }
+    .mhgr-slide-cell__title { font-weight: 700; color: #3A2A26; }
+    .mhgr-slide-cell__meta { font-size: .8rem; color: #6E635E; margin-top: .2rem; }
+    .mhgr-slide-cell__meta i { margin-inline-end: .25rem; }
+    .mhgr-slide-status { font-size: .72rem; font-weight: 600; margin-inline-start: .35rem; vertical-align: middle; }
+</style>
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("admin.mahjar.homeslides.list.title")
+    </h1>
+    <div class="float-right">
+        <a href="@Model.StoreUrl" target="_blank" rel="noopener" class="btn bg-olive">
+            <i class="fas fa-store"></i>
+            @T("admin.mahjar.homeslides.list.viewstore")
+        </a>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-square-plus"></i>
+            @T("admin.mahjar.homeslides.addnew")
+        </a>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                @* what slides are, where they appear, and how big the pictures should be *@
+                <div class="card card-default mhgr-slides-intro">
+                    <div class="card-body">
+                        <div class="mhgr-slides-intro__lead">
+                            <strong>@T("admin.mahjar.homeslides.list.intro.title")</strong>
+                            @T("admin.mahjar.homeslides.list.intro")
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mhgr-slides-intro__item">
+                                    <span class="mhgr-slides-intro__icon"><i class="fas fa-images"></i></span>
+                                    <div>
+                                        <h5>@T("enums.nop.core.domain.mahjar.homeslideplacement.hero")</h5>
+                                        <p>@T("admin.mahjar.homeslides.list.intro.hero")</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mhgr-slides-intro__item">
+                                    <span class="mhgr-slides-intro__icon"><i class="fas fa-panorama"></i></span>
+                                    <div>
+                                        <h5>@T("enums.nop.core.domain.mahjar.homeslideplacement.feature")</h5>
+                                        <p>@T("admin.mahjar.homeslides.list.intro.feature")</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mhgr-slides-intro__item">
+                                    <span class="mhgr-slides-intro__icon"><i class="fas fa-crop-simple"></i></span>
+                                    <div>
+                                        <h5>@T("admin.mahjar.homeslides.list.intro.sizes.title")</h5>
+                                        <p>@T("admin.mahjar.homeslides.list.intro.sizes")</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="mhgr-slides-intro__item">
+                                    <span class="mhgr-slides-intro__icon"><i class="far fa-clock"></i></span>
+                                    <div>
+                                        <h5>@T("admin.mahjar.homeslides.list.intro.order.title")</h5>
+                                        <p>@T("admin.mahjar.homeslides.list.intro.order")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default card-search">
+                    <div class="card-body">
+                        <div class="row search-row @(!hideSearchBlock ? "opened" : "")" data-hideAttribute="@hideSearchBlockAttributeName">
+                            <div class="search-text">@T("Admin.Common.Search")</div>
+                            <div class="icon-search"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></div>
+                            <div class="icon-collapse"><i class="far fa-angle-@(!hideSearchBlock ? "up" : "down")" aria-hidden="true"></i></div>
+                        </div>
+
+                        <div class="search-body @(hideSearchBlock ? "closed" : "")">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <div class="col-md-4">
+                                            <nop-label asp-for="SearchPlacementId" />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <nop-select asp-for="SearchPlacementId" asp-items="Model.AvailablePlacements" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="text-center col-12">
+                                    <button type="button" id="search-homeslides" class="btn btn-primary btn-search">
+                                        <i class="fas fa-magnifying-glass"></i>
+                                        @T("Admin.Common.Search")
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "homeslides-grid",
+                            UrlRead = new DataUrl("List", "HomeSlide", null),
+                            SearchButtonId = "search-homeslides",
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            Filters = new List<FilterParameter>
+                            {
+                                new FilterParameter(nameof(Model.SearchPlacementId))
+                            },
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(HomeSlideModel.PictureThumbnailUrl))
+                                {
+                                    Title = T("admin.mahjar.homeslides.grid.picture").Text,
+                                    Width = "110",
+                                    ClassName = NopColumnClassDefaults.CenterAll,
+                                    Render = new RenderCustom("renderHomeSlideThumb")
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.Title))
+                                {
+                                    Title = T("admin.mahjar.homeslides.fields.title").Text,
+                                    Render = new RenderCustom("renderHomeSlideTitle")
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.PlacementName))
+                                {
+                                    Title = T("admin.mahjar.homeslides.fields.placement").Text,
+                                    Width = "130",
+                                    ClassName = "text-nowrap"
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.LayoutName))
+                                {
+                                    Title = T("admin.mahjar.homeslides.fields.layout").Text,
+                                    Width = "110",
+                                    ClassName = "text-nowrap"
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.ShowOnWeb))
+                                {
+                                    Title = T("admin.mahjar.homeslides.grid.web").Text,
+                                    Width = "70",
+                                    ClassName = NopColumnClassDefaults.CenterAll,
+                                    Render = new RenderBoolean()
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.ShowOnApp))
+                                {
+                                    Title = T("admin.mahjar.homeslides.grid.app").Text,
+                                    Width = "70",
+                                    ClassName = NopColumnClassDefaults.CenterAll,
+                                    Render = new RenderBoolean()
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.Published))
+                                {
+                                    Title = T("admin.mahjar.homeslides.fields.published").Text,
+                                    Width = "80",
+                                    ClassName = NopColumnClassDefaults.CenterAll,
+                                    Render = new RenderBoolean()
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.DisplayOrder))
+                                {
+                                    Title = T("admin.mahjar.homeslides.fields.displayorder").Text,
+                                    Width = "90",
+                                    ClassName = NopColumnClassDefaults.CenterAll
+                                },
+                                new ColumnProperty(nameof(HomeSlideModel.Id))
+                                {
+                                    Title = T("Admin.Common.Edit").Text,
+                                    Width = "100",
+                                    ClassName = NopColumnClassDefaults.Button,
+                                    Render = new RenderButtonEdit(new DataUrl("~/Admin/HomeSlide/Edit"))
+                                }
+                            }
+                        })
+
+                        <script>
+                            //the slide picture, cropped like the store crops it (a missing picture shows a quiet placeholder)
+                            function renderHomeSlideThumb(data, type, row, meta) {
+                                if (!data) {
+                                    return '<span class="mhgr-slide-thumb mhgr-slide-thumb--empty"><i class="far fa-image"></i></span>';
+                                }
+                                return '<img class="mhgr-slide-thumb" loading="lazy" alt="" src="' + escapeHtml(data) + '" />';
+                            }
+
+                            //kicker, title with the live / scheduled / ended / hidden badge, and where the slide links to
+                            var homeSlideStatusClasses = { live: 'badge-success', scheduled: 'badge-info', ended: 'badge-secondary', hidden: 'badge-warning' };
+                            function renderHomeSlideTitle(data, type, row, meta) {
+                                var html = '<div class="mhgr-slide-cell">';
+                                if (row.Kicker) {
+                                    html += '<div class="mhgr-slide-cell__kicker">' + escapeHtml(row.Kicker) + '</div>';
+                                }
+                                html += '<span class="mhgr-slide-cell__title">' + escapeHtml(data || '') + '</span>';
+                                if (row.StatusName) {
+                                    html += '<span class="badge mhgr-slide-status ' + (homeSlideStatusClasses[row.StatusCode] || 'badge-secondary') + '">'
+                                        + escapeHtml(row.StatusName) + '</span>';
+                                }
+                                if (row.TargetSummary) {
+                                    html += '<div class="mhgr-slide-cell__meta"><i class="fas fa-link"></i>' + escapeHtml(row.TargetSummary) + '</div>';
+                                }
+                                return html + '</div>';
+                            }
+
+                            $(function () {
+                                //the placement filter applies as soon as it changes
+                                $('#@Html.IdFor(model => model.SearchPlacementId)').on('change', function () {
+                                    $('#search-homeslides').trigger('click');
+                                });
+                            });
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

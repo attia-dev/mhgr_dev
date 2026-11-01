@@ -1,0 +1,55 @@
+@model Nop.Web.Models.Notification.NotificationPreferenceModel
+@*[Mahjar notifications] buyer per-type notification preferences*@
+@{
+    Layout = "_ColumnsTwo";
+    NopHtml.AddTitleParts(T("mahjar.notifications.settings.title").Text);
+    NopHtml.AppendPageCssClassParts("html-account-page");
+    NopHtml.AppendPageCssClassParts("html-notification-settings-page");
+}
+
+@section left
+{
+    @await Component.InvokeAsync(typeof(CustomerNavigationViewComponent), new { selectedTabId = CustomerNavigationEnum.NotificationSettings })
+}
+
+<div class="page account-page notification-settings-page">
+    <div class="page-title">
+        <h1>@T("Account.MyAccount") - @T("mahjar.notifications.settings.title")</h1>
+    </div>
+    <div class="page-body">
+        <form asp-route="NotificationSaveSettings" method="post">
+            <table class="notification-prefs">
+                <thead>
+                    <tr>
+                        <th>@T("mahjar.notifications.title")</th>
+                        <th class="center">@T("mahjar.notifications.settings.inapp")</th>
+                        <th class="center">@T("mahjar.notifications.settings.email")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Items.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                @Model.Items[i].TypeLabel
+                                <input type="hidden" name="Items[@i].TypeId" value="@Model.Items[i].TypeId" />
+                                <input type="hidden" name="Items[@i].TypeLabel" value="@Model.Items[i].TypeLabel" />
+                            </td>
+                            <td class="center">
+                                <input type="checkbox" name="Items[@i].InAppEnabled" value="true" @(Model.Items[i].InAppEnabled ? "checked" : "") />
+                                <input type="hidden" name="Items[@i].InAppEnabled" value="false" />
+                            </td>
+                            <td class="center">
+                                <input type="checkbox" name="Items[@i].EmailEnabled" value="true" @(Model.Items[i].EmailEnabled ? "checked" : "") />
+                                <input type="hidden" name="Items[@i].EmailEnabled" value="false" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="buttons">
+                <button type="submit" class="button-1 save-notification-settings-button">@T("Common.Save")</button>
+            </div>
+        </form>
+    </div>
+</div>

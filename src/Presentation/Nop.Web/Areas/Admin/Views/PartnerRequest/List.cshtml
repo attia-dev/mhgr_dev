@@ -1,0 +1,139 @@
+@* [Mahjar partner-request] the queue of partner applications *@
+@using Nop.Web.Areas.Admin.Models.Mahjar
+@model PartnerRequestSearchModel
+
+@{
+    //page title
+    ViewBag.PageTitle = T("Admin.Mahjar.PartnerRequests").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Mahjar partner requests");
+}
+
+@{
+    const string hideSearchBlockAttributeName = "PartnerRequestsPage.HideSearchBlock";
+    var hideSearchBlock = await genericAttributeService.GetAttributeAsync<bool>(await workContext.GetCurrentCustomerAsync(), hideSearchBlockAttributeName);
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Admin.Mahjar.PartnerRequests")
+    </h1>
+    <div class="float-right">
+        &nbsp;
+    </div>
+</div>
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        <p class="text-muted">@T("Admin.Mahjar.PartnerRequests.Hint")</p>
+                    </div>
+                </div>
+
+                <div class="card card-default card-search">
+                    <div class="card-body">
+                        <div class="row search-row @(!hideSearchBlock ? "opened" : "")" data-hideAttribute="@hideSearchBlockAttributeName">
+                            <div class="search-text">@T("Admin.Common.Search")</div>
+                            <div class="icon-search"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></div>
+                            <div class="icon-collapse"><i class="far fa-angle-@(!hideSearchBlock ? "up" : "down")" aria-hidden="true"></i></div>
+                        </div>
+
+                        <div class="search-body @(hideSearchBlock ? "closed" : "")">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group row">
+                                        <div class="col-md-4">
+                                            <nop-label asp-for="StatusId" />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <nop-select asp-for="StatusId" asp-items="Model.AvailableStatuses" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="form-group row">
+                                        <div class="col-md-4">
+                                            <nop-label asp-for="SearchKeyword" />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <nop-editor asp-for="SearchKeyword" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="text-center col-12">
+                                    <button type="button" id="search-partnerrequests" class="btn btn-primary btn-search">
+                                        <i class="fas fa-magnifying-glass"></i>
+                                        @T("Admin.Common.Search")
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "partnerrequests-grid",
+                            UrlRead = new DataUrl("List", "PartnerRequest", null),
+                            SearchButtonId = "search-partnerrequests",
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            Filters = new List<FilterParameter>
+                            {
+                                new FilterParameter(nameof(Model.StatusId)),
+                                new FilterParameter(nameof(Model.SearchKeyword))
+                            },
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty(nameof(PartnerRequestModel.Name))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.Name").Text,
+                                    Width = "220"
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.Email))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.Email").Text,
+                                    Width = "220"
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.VendorTypeName))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.VendorType").Text,
+                                    Width = "140"
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.ActivatedServicesName))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.Services").Text,
+                                    Width = "160"
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.SubmittedOnUtc))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.SubmittedOn").Text,
+                                    Width = "150",
+                                    Render = new RenderDate()
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.StatusName))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Fields.Status").Text,
+                                    Width = "130"
+                                },
+                                new ColumnProperty(nameof(PartnerRequestModel.Id))
+                                {
+                                    Title = T("Admin.Mahjar.PartnerRequests.Review").Text,
+                                    Width = "120",
+                                    ClassName = NopColumnClassDefaults.Button,
+                                    Render = new RenderButtonEdit(new DataUrl("~/Admin/PartnerRequest/Review"))
+                                }
+                            }
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

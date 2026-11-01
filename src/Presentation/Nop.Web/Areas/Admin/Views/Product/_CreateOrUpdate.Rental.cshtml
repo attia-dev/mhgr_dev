@@ -1,0 +1,63 @@
+@model ProductModel
+@using Nop.Core.Domain.Catalog;
+@using Nop.Services
+
+<div class="card-body">
+    @*Available for purchase is rendered unconditionally so it is always posted back (buy / rent / both). [Mahjar buy-or-rent]*@
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="AvailableForPurchase" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="AvailableForPurchase" />
+            <span asp-validation-for="AvailableForPurchase"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="IsRental" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="IsRental" />
+            <span asp-validation-for="IsRental"></span>
+        </div>
+    </div>
+    <nop-nested-setting asp-for="IsRental">
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RentalPrice" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="RentalPrice" />
+                <span asp-validation-for="RentalPrice"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RentalSecurityDeposit" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="RentalSecurityDeposit" />
+                <span asp-validation-for="RentalSecurityDeposit"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RentalPriceLength" />
+            </div>
+            <div class="col-md-9">
+                <nop-editor asp-for="RentalPriceLength" />
+                <span asp-validation-for="RentalPriceLength"></span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="col-md-3">
+                <nop-label asp-for="RentalPricePeriodId" />
+            </div>
+            <div class="col-md-9">
+                <nop-select asp-for="RentalPricePeriodId" asp-items="@(await ((RentalPricePeriod)Model.RentalPricePeriodId).ToSelectListAsync())" />
+                <span asp-validation-for="RentalPricePeriodId"></span>
+            </div>
+        </div>
+    </nop-nested-setting>
+</div>

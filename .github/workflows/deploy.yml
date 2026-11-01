@@ -1,0 +1,58 @@
+name: Deploy to Contabo (IIS)
+
+# Deploys MHGR to the production Contabo Windows/IIS box on every push to main.
+# Runs on a SELF-HOSTED runner installed ON that server (label: self-hosted + windows),
+# so the build, publish and the self-healing redeploy.ps1 all run locally on the box.
+# No inbound firewall ports are needed (the runner polls GitHub outbound).
+#
+# Build recipe matches DEPLOY/DEPLOYMENT-IIS.md §2:
+#   1. build the WHOLE solution (this populates Nop.Web\Plugins\ from each plugin project)
+#   2. publish Nop.Web with --no-build --no-self-contained  (do NOT set RazorCompileOnPublish)
+#   3. deploy\redeploy.ps1 -Source <publish>  (stops pool, overlays additively, heals the two
+#      server-only App_Data\*.json files, fixes perms/DB, restarts, smoke-tests for the installer page)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}   # lets you trigger a deploy manually from the Actions tab
+
+# Never run two production deploys at the same time; let an in-flight one finish.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Honors global.json (sdk 9.0.100, rollForward latestFeature). Installs it on the
+      # runner's tool cache if the server doesn't already have it — no admin needed for this step.
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build solution (populates Nop.Web\Plugins from each plugin project)
+        shell: powershell
+        run: dotnet build src\NopCommerce.sln -c Release
+
+      - name: Publish Nop.Web
+        shell: powershell
+        run: |
+          $pub = Join-Path $env:RUNNER_TEMP 'mhgr-publish'
+          if (Test-Path $pub) { Remove-Item $pub -Recurse -Force }
+          dotnet publish src\Presentation\Nop.Web\Nop.Web.csproj `
+            -c Release -o $pub --no-build --no-self-contained
+          "PUBLISH_DIR=$pub" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
+
+      # redeploy.ps1 needs an elevated token + WebAdministration + sysadmin on .\SQLEXPRESS.
+      # A self-hosted runner installed as a SERVICE under a local-admin / SQL-sysadmin account
+      # gets a full elevated token, so #Requires -RunAsAdministrator is satisfied.
+      - name: Deploy (stop pool, overlay, self-heal, restart, smoke-test)
+        shell: powershell
+        run: .\deploy\redeploy.ps1 -Source $env:PUBLISH_DIR
