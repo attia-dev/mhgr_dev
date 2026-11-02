@@ -1,0 +1,2 @@
+1- create the database via the installation wizard named MhgrStore
+2- then from ssms restore the created database using the .bak file
